@@ -84,6 +84,7 @@ impl OptionsMenu {
 		let get_zoom = |mode| match mode {
 			chipty::ZoomMode::Wide => "\x1b[color=#ff0]Wide",
 			chipty::ZoomMode::Classic => "\x1b[color=#0f0]Classic",
+			chipty::ZoomMode::Fit => "\x1b[color=#0ff]Fit",
 			chipty::ZoomMode::Editor => "\x1b[color=#0ff]Editor",
 		};
 

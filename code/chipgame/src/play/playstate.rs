@@ -112,7 +112,7 @@ impl PlayState {
 		fx.game.ps.attempts = attempts;
 		fx.replay_inputs = inputs;
 		fx.camera.set_perspective(self.save_data.options.perspective);
-		fx.camera.set_zoom_mode(self.save_data.options.zoom_mode, false);
+		fx.camera.set_zoom_mode(self.save_data.options.zoom_mode, false, fx.time);
 		self.fx = Some(fx);
 		self.warp = None;
 
@@ -126,7 +126,7 @@ impl PlayState {
 			let mut fx = fx::FxState::new(level_number, level, chipcore::RngSeed::System, &tiles::TILES);
 			fx.is_preview = true;
 			fx.camera.set_perspective(self.save_data.options.perspective);
-			fx.camera.set_zoom_mode(self.save_data.options.zoom_mode, false);
+			fx.camera.set_zoom_mode(self.save_data.options.zoom_mode, false, fx.time);
 			Some(fx)
 		}
 		else {
@@ -331,7 +331,7 @@ impl PlayState {
 						self.save_data.options.zoom_mode = value;
 						self.save_data.save(&self.lvsets.current());
 						if let Some(fx) = &mut self.fx {
-							fx.camera.set_zoom_mode(value, true);
+							fx.camera.set_zoom_mode(value, true, fx.time);
 						}
 					}
 				}

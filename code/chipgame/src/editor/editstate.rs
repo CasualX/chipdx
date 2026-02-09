@@ -26,9 +26,10 @@ impl EditorEditState {
 		self.fx = fx::FxState::new(0, &level_dto, chipcore::RngSeed::System, &tiles::TILES);
 		self.fx.hud_enabled = false;
 		// Initialize the camera far enough to see the whole level
-		self.fx.camera.target = Vec3f(26.0 * 16.0, 20.0 * 16.0, 0.0);
+		let controller = fx::PositionController { target: Vec2f(26.0 * 16.0, 20.0 * 16.0) };
+		self.fx.camera.set_controller(fx::Controller::FreeRoam(controller), self.fx.time);
 		self.fx.camera.set_perspective(false);
-		self.fx.camera.set_zoom_mode(chipty::ZoomMode::Editor, false);
+		self.fx.camera.set_zoom_mode(chipty::ZoomMode::Editor, false, self.fx.time);
 		// Unlock the camera
 		self.fx.pause();
 
@@ -149,19 +150,20 @@ impl EditorEditState {
 	}
 	pub fn draw(&mut self, g: &mut shade::Graphics, resx: &fx::Resources, time: f64) {
 		if self.input.key_left {
-			self.fx.camera.target.x -= 5.0;
+			self.fx.camera.pan_free_roam(Vec2f(-5.0, 0.0), self.fx.time);
 		}
 		if self.input.key_right {
-			self.fx.camera.target.x += 5.0;
+			self.fx.camera.pan_free_roam(Vec2f(5.0, 0.0), self.fx.time);
 		}
 		if self.input.key_up {
-			self.fx.camera.target.y -= 5.0;
+			self.fx.camera.pan_free_roam(Vec2f(0.0, -5.0), self.fx.time);
 		}
 		if self.input.key_down {
-			self.fx.camera.target.y += 5.0;
+			self.fx.camera.pan_free_roam(Vec2f(0.0, 5.0), self.fx.time);
 		}
 
-		self.fx.camera.animate_position(self.fx.dt);
+		self.fx.camera.animate_blend();
+		self.fx.camera.animate_position(self.fx.time, self.fx.dt, resx.viewport.size());
 
 		if let Some(mut tool_state) = self.tool.take() {
 			tool_state.think(self);

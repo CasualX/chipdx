@@ -187,7 +187,11 @@ impl EditorState {
 				let level = s.save_level();
 				let level_dto = serde_json::from_str(&level).unwrap();
 				let mut fx = fx::FxState::new(0, &level_dto, chipcore::RngSeed::System, &crate::play::TILES);
+				fx.time = s.fx.time;
+				let edit_view = s.fx.camera.save_state();
+
 				fx.camera.set_perspective(true);
+				fx.camera.load_state(edit_view, fx.time);
 				*self = EditorState::Play(Box::new(EditorPlayState {
 					level,
 					fx,
@@ -196,9 +200,13 @@ impl EditorState {
 				}));
 			}
 			EditorState::Play(s) => {
+				let play_view = s.fx.camera.save_state();
 				let mut state = EditorEditState::default();
 				state.load_level(&s.level);
 				state.screen_size = s.screen_size;
+				state.fx.time = s.fx.time;
+
+				state.fx.camera.load_state(play_view, state.fx.time);
 				*self = EditorState::Edit(Box::new(state));
 			},
 		}

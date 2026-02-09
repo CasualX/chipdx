@@ -69,7 +69,16 @@ impl FxState {
 		// Parse the level data into the game state
 		fx.game.parse(level_dto, rng_seed);
 		fx.game.time_state = chipcore::TimeState::Waiting;
-		fx.camera.master = fx.game.ps.master;
+		let controller = FollowEntityController {
+			master: fx.game.ps.master,
+			move_src: Vec2::ZERO,
+			move_dest: Vec2::ZERO,
+			move_time: 0.0,
+			move_spd: 1.0,
+		};
+		fx.camera.set_controller(Controller::FollowEntity(controller), 0.0);
+		fx.camera.bounds.mins = Vec2::ZERO;
+		fx.camera.bounds.maxs = Vec2(fx.game.field.width as f32 * 32.0, fx.game.field.height as f32 * 32.0);
 
 		// Initialize the render field based on the game state
 		fx.render.field.width = fx.game.field.width;
@@ -120,7 +129,17 @@ impl FxState {
 			self.scout_init(false);
 
 			// Center camera on player again
-			self.camera.move_teleport = true;
+			let master = self.game.ps.master;
+			if let Some(entity) = self.game.ents.get(master) {
+				let controller = FollowEntityController {
+					master,
+					move_src: entity.pos,
+					move_dest: entity.pos,
+					move_time: self.time,
+					move_spd: 8.0 / chipcore::FPS as f32,
+				};
+				self.camera.switch_controller(Controller::FollowEntity(controller), self.time);
+			}
 		}
 	}
 	pub fn think(&mut self, input: &chipcore::Input, menu_active: bool) {
@@ -238,11 +257,8 @@ impl FxState {
 		if self.game.time != 0 {
 			self.camera.animate_blend();
 		}
-		if !matches!(self.game.time_state, chipcore::TimeState::Paused) {
-			self.camera.animate_move(ctx.time);
-		}
 		self.scout_camera(ctx.dt);
-		self.camera.animate_position(ctx.dt);
+		self.camera.animate_position(self.time, ctx.dt, resx.viewport.size());
 		self.camera.shake.update(ctx.dt, &mut self.random);
 		self.render.update(&ctx);
 
@@ -286,14 +302,16 @@ impl FxState {
 			Some(ehandle)
 		}).unwrap_or(self.game.ps.master);
 
-		if self.camera.master != ehandle {
-			self.camera.master = ehandle;
+		let camera_master = self.camera.controller.follow_entity().map(|follow| follow.master);
+		if camera_master != Some(ehandle) {
 			if let Some(entity) = self.game.ents.get(ehandle) {
-				self.camera.move_src = entity.pos;
-				self.camera.move_dest = entity.pos;
-				self.camera.move_time = self.time;
-				self.camera.move_spd = 8.0 / chipcore::FPS as f32;
-				self.camera.move_teleport = true;
+				self.camera.switch_controller(Controller::FollowEntity(FollowEntityController {
+					master: ehandle,
+					move_src: entity.pos,
+					move_dest: entity.pos,
+					move_time: self.time,
+					move_spd: 8.0 / chipcore::FPS as f32,
+				}), self.time);
 			}
 		}
 	}
@@ -374,8 +392,8 @@ impl FxState {
 			return;
 		}
 		let pixels_per_second = speed * chipcore::FPS as f32;
-		let delta = dir.cast::<f32>().vec3(0.0) * (pixels_per_second * dt as f32);
-		self.camera.set_target(self.camera.target + delta);
+		let delta = dir.cast::<f32>() * (pixels_per_second * dt as f32);
+		self.camera.pan_free_roam(delta, self.time);
 	}
 	fn scout_init(&mut self, scout_active: bool) {
 		self.scout_active = scout_active;
@@ -404,7 +422,7 @@ impl FxState {
 
 		let viewport = cvmath::Bounds2!(0, 0, SIZE, SIZE);
 
-		let light_target = self.camera.target;
+		let light_target = self.camera.target().vec3(0.0);
 		let light_pos = light_target + Vec3f::new(-300.0, 300.0, 300.0);
 		let view = cvmath::Transform3f::look_at(light_pos, light_target, -Vec3f::Y, Hand::LH);
 		let near = 10.0;

@@ -46,6 +46,7 @@ pub enum ZoomMode {
 	#[default]
 	Classic,
 	Wide,
+	Fit,
 	Editor,
 }
 
@@ -54,7 +55,8 @@ impl ZoomMode {
 	pub fn cycle(self) -> ZoomMode {
 		match self {
 			ZoomMode::Wide => ZoomMode::Classic,
-			ZoomMode::Classic => ZoomMode::Wide,
+			ZoomMode::Classic => ZoomMode::Fit,
+			ZoomMode::Fit => ZoomMode::Wide,
 			// Editor mode is not cycled to, it can only be set from the level editor
 			ZoomMode::Editor => ZoomMode::Editor,
 		}

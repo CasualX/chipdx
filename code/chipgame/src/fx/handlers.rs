@@ -47,12 +47,13 @@ pub fn entity_created(fx: &mut FxState, ehandle: chipcore::EntityHandle, kind: c
 	fx.render.objects.insert(handle, obj);
 	fx.game_objects.insert(ehandle, handle);
 
-	if fx.camera.master == ehandle {
-		fx.camera.move_src = ent.pos;
-		fx.camera.move_dest = ent.pos;
-		fx.camera.move_time = fx.time;
-		fx.camera.move_spd = ent.base_spd as f32 / chipcore::FPS as f32;
-		fx.camera.move_teleport = true;
+	if let Some(follow) = fx.camera.controller.follow_entity_mut() {
+		if follow.master == ehandle {
+			follow.move_src = ent.pos;
+			follow.move_dest = ent.pos;
+			follow.move_time = fx.time;
+			follow.move_spd = ent.base_spd as f32 / chipcore::FPS as f32;
+		}
 	}
 }
 
@@ -125,23 +126,19 @@ pub fn entity_step(fx: &mut FxState, ehandle: chipcore::EntityHandle) {
 	// Quick hack to flatten sprites on top of walls
 	// obj.data.model = if end_pos.z >= 20.0 { chipty::ModelId::FloorSprite } else { model_for_ent(ent) };
 
-	if fx.camera.master == ehandle {
-		fx.camera.move_src = src;
-		fx.camera.move_dest = ent.pos;
-		fx.camera.move_time = fx.time;
-		fx.camera.move_spd = ent.step_spd as f32 / chipcore::FPS as f32;
-		fx.camera.move_teleport = false;
+	if let Some(follow) = fx.camera.controller.follow_entity_mut() {
+		if follow.master == ehandle {
+			follow.move_src = src;
+			follow.move_dest = ent.pos;
+			follow.move_time = fx.time;
+			follow.move_spd = ent.step_spd as f32 / chipcore::FPS as f32;
+		}
 	}
 }
 
 pub fn entity_teleport(fx: &mut FxState, ehandle: chipcore::EntityHandle) {
 	// Step out of the teleport
 	entity_step(fx, ehandle);
-
-	// When teleporting the player snap the camera
-	if fx.camera.master == ehandle {
-		fx.camera.move_teleport = true;
-	}
 }
 
 pub fn entity_face_dir(fx: &mut FxState, ehandle: chipcore::EntityHandle) {
