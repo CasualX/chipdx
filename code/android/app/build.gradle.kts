@@ -4,7 +4,7 @@ buildscript {
 		mavenCentral()
 	}
 	dependencies {
-		classpath("org.apache.xmlgraphics:batik-all:1.17")
+		classpath("org.apache.xmlgraphics:batik-all:1.19")
 	}
 }
 
@@ -22,6 +22,7 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
 	id("com.android.application")
@@ -162,13 +163,11 @@ fun configuredAndroidSdkRoot(): String {
 			return sdkDir
 		}
 	}
-	throw GradleException(
-		"Android SDK location is not configured. Set ANDROID_HOME or ANDROID_SDK_ROOT, or open code/android in Android Studio once so it writes local.properties.",
-	)
+	throw GradleException("Android SDK location is not configured. Set ANDROID_HOME or ANDROID_SDK_ROOT, or open code/android in Android Studio once so it writes local.properties.")
 }
 
 dependencies {
-	implementation("androidx.core:core-ktx:1.15.0")
+	implementation("androidx.core:core-ktx:1.18.0")
 }
 
 val buildRustAndroid by tasks.registering(Exec::class) {
@@ -177,27 +176,19 @@ val buildRustAndroid by tasks.registering(Exec::class) {
 	workingDir = repoRoot
 	outputs.upToDateWhen { false }
 	commandLine(
-		"cargo",
-		"ndk",
-		"-t",
-		"arm64-v8a",
-		"-t",
-		"x86_64",
-		"-o",
-		rustJniLibsDir.get().asFile.absolutePath,
-		"build",
-		"-p",
-		"chipjni",
-		"--release",
+		"cargo", "ndk",
+		"-t", "arm64-v8a",
+		"-t", "x86_64",
+		"-o", rustJniLibsDir.get().asFile.absolutePath,
+		"build", "--release",
+		"-p", "chipjni",
 	)
 
 	doFirst {
 		val sdkRoot = configuredAndroidSdkRoot()
 		val ndkRoot = file("$sdkRoot/ndk/${android.ndkVersion}")
 		if (!ndkRoot.isDirectory) {
-			throw GradleException(
-				"Android NDK not found at $ndkRoot. Install NDK ${android.ndkVersion} from Android Studio's SDK Manager or update android.ndkVersion.",
-			)
+			throw GradleException("Android NDK not found at $ndkRoot. Install NDK ${android.ndkVersion} from Android Studio's SDK Manager or update android.ndkVersion.")
 		}
 		rustJniLibsDir.get().asFile.mkdirs()
 		environment("ANDROID_HOME", sdkRoot)
@@ -233,10 +224,7 @@ android {
 		}
 		release {
 			isMinifyEnabled = false
-			proguardFiles(
-				getDefaultProguardFile("proguard-android-optimize.txt"),
-				"proguard-rules.pro",
-			)
+			proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
 		}
 	}
 
@@ -245,13 +233,15 @@ android {
 		targetCompatibility = JavaVersion.VERSION_17
 	}
 
-	kotlinOptions {
-		jvmTarget = "17"
-	}
-
 	sourceSets.named("main") {
 		jniLibs.setSrcDirs(listOf(rustJniLibsDir))
 		res.srcDir(generatedIconResDir)
+	}
+}
+
+kotlin {
+	compilerOptions {
+		jvmTarget = JvmTarget.JVM_17
 	}
 }
 

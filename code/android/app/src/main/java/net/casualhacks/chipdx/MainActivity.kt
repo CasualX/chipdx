@@ -18,6 +18,7 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.annotation.Keep
 import androidx.core.view.WindowCompat
 import java.io.File
 import kotlin.math.abs
@@ -106,40 +107,48 @@ class MainActivity : Activity() {
 		return super.onKeyUp(keyCode, event)
 	}
 
+	@Keep
+	@Suppress("unused")
 	fun registerSound(id: Int, relativePath: String, data: ByteArray) {
 		audioBank.registerSound(id, relativePath, data)
 	}
 
+	@Keep
+	@Suppress("unused")
 	fun registerMusic(id: Int, relativePath: String, data: ByteArray) {
 		audioBank.registerMusic(id, relativePath, data)
 	}
 
+	@Keep
+	@Suppress("unused")
 	fun playSound(id: Int) {
 		audioBank.playSound(id)
 	}
 
+	@Keep
+	@Suppress("unused")
 	fun playMusic(id: Int) {
 		audioBank.playMusic(id)
 	}
 
+	@Keep
+	@Suppress("unused")
 	fun setNativeTitle(title: String) {
 		runOnUiThread {
 			this.title = title
 		}
 	}
 
+	@Keep
+	@Suppress("unused")
 	fun quitGame() {
 		runOnUiThread {
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-				finishAndRemoveTask()
-			}
-			else {
-				finishAffinity()
-				finish()
-			}
+			finishAndRemoveTask()
 		}
 	}
 
+	@Keep
+	@Suppress("unused")
 	fun saveFile(relativePath: String, data: ByteArray): Boolean {
 		return runCatching {
 			val target = resolveStoragePath(relativePath)
@@ -148,6 +157,8 @@ class MainActivity : Activity() {
 		}.isSuccess
 	}
 
+	@Keep
+	@Suppress("unused")
 	fun loadFile(relativePath: String): ByteArray? {
 		val target = resolveStoragePath(relativePath)
 		return if (target.exists()) target.readBytes() else null
@@ -176,6 +187,14 @@ class MainActivity : Activity() {
 
 			override fun onTouchEvent(event: MotionEvent): Boolean {
 				updateTouchControls(this, event)
+				if (event.actionMasked == MotionEvent.ACTION_UP) {
+					performClick()
+				}
+				return true
+			}
+
+			override fun performClick(): Boolean {
+				super.performClick()
 				return true
 			}
 		}.apply {
