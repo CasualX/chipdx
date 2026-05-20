@@ -321,6 +321,91 @@ fn main() {
 								}
 							}
 						}
+						PhysicalKey::Code(KeyCode::F6) if pressed => {
+							if let editor::EditorState::Edit(editor) = &mut editor {
+								let current = editor.save_level_dto().name;
+								let result = rustydialogs::TextInput {
+									title: "Level Title",
+									message: "Enter the level title:",
+									value: &current,
+									mode: rustydialogs::TextInputMode::SingleLine,
+									owner: window_owner(app.as_deref()),
+								}.show();
+								if let Some(value) = result {
+									editor.set_level_name(value);
+								}
+							}
+						}
+						PhysicalKey::Code(KeyCode::F7) if pressed => {
+							if let editor::EditorState::Edit(editor) = &mut editor {
+								let current = editor.save_level_dto().required_chips;
+								let result = rustydialogs::TextInput {
+									title: "Required Chips",
+									message: "Enter how many chips are required:",
+									value: &current.to_string(),
+									mode: rustydialogs::TextInputMode::SingleLine,
+									owner: window_owner(app.as_deref()),
+								}.show();
+								if let Some(value) = result {
+									match value.trim_ascii().parse::<i32>() {
+										Ok(number) => editor.set_required_chips(number),
+										Err(_) => eprintln!("Invalid numeric input for required chips"),
+									}
+								}
+							}
+						}
+						PhysicalKey::Code(KeyCode::F8) if pressed => {
+							if let editor::EditorState::Edit(editor) = &mut editor {
+								let current = editor.save_level_dto().time_limit;
+								let result = rustydialogs::TextInput {
+									title: "Time Limit",
+									message: "Enter the time limit in ticks (0 for no limit):",
+									value: &current.to_string(),
+									mode: rustydialogs::TextInputMode::SingleLine,
+									owner: window_owner(app.as_deref()),
+								}.show();
+								if let Some(value) = result {
+									match value.trim_ascii().parse::<i32>() {
+										Ok(number) => editor.set_time_limit(number),
+										Err(_) => eprintln!("Invalid numeric input for time limit"),
+									}
+								}
+							}
+						}
+						PhysicalKey::Code(KeyCode::F9) if pressed => {
+							if let editor::EditorState::Edit(editor) = &mut editor {
+								let current = editor.save_level_dto().hint;
+								let result = rustydialogs::TextInput {
+									title: "Level Hint",
+									message: "Enter the level hint:",
+									value: current.as_deref().unwrap_or(""),
+									mode: rustydialogs::TextInputMode::MultiLine,
+									owner: window_owner(app.as_deref()),
+								}.show();
+								if let Some(value) = result {
+									let hint = value.trim_ascii();
+									let hint = if hint.is_empty() { None } else { Some(value) };
+									editor.set_hint(hint);
+								}
+							}
+						}
+						PhysicalKey::Code(KeyCode::F10) if pressed => {
+							if let editor::EditorState::Edit(editor) = &mut editor {
+								let current = editor.save_level_dto().author;
+								let result = rustydialogs::TextInput {
+									title: "Author Name",
+									message: "Enter the author name:",
+									value: current.as_deref().unwrap_or(""),
+									mode: rustydialogs::TextInputMode::SingleLine,
+									owner: window_owner(app.as_deref()),
+								}.show();
+								if let Some(value) = result {
+									let author = value.trim_ascii();
+									let author = if author.is_empty() { None } else { Some(value) };
+									editor.set_author(author);
+								}
+							}
+						}
 						PhysicalKey::Code(KeyCode::KeyT) => editor.tool_terrain(pressed),
 						PhysicalKey::Code(KeyCode::KeyE) => editor.tool_entity(pressed),
 						PhysicalKey::Code(KeyCode::KeyC) => editor.tool_connection(pressed),

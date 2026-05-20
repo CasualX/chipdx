@@ -90,6 +90,11 @@ The game includes a level editor that can be used to create and play custom leve
 | --- | --- |
 | Load level | F2 |
 | Save level | F5 |
+| Edit level title | F6 |
+| Edit chips required | F7 |
+| Edit time limit | F8 |
+| Edit hint | F9 |
+| Edit author name | F10 |
 | Pan camera | Arrow keys |
 | Select Terrain Tool | T |
 | Select Entity Tool | E |

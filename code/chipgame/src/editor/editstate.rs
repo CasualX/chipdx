@@ -87,6 +87,26 @@ impl EditorEditState {
 		let dto = self.save_level_dto();
 		serde_json::to_string(&dto).unwrap()
 	}
+	pub fn set_level_name(&mut self, value: String) {
+		self.fx.game.field.name = value;
+		self.push_history();
+	}
+	pub fn set_author(&mut self, value: Option<String>) {
+		self.fx.game.field.author = value;
+		self.push_history();
+	}
+	pub fn set_hint(&mut self, value: Option<String>) {
+		self.fx.game.field.hint = value;
+		self.push_history();
+	}
+	pub fn set_required_chips(&mut self, value: i32) {
+		self.fx.game.field.required_chips = value.max(0);
+		self.push_history();
+	}
+	pub fn set_time_limit(&mut self, value: i32) {
+		self.fx.game.field.time_limit = value.max(0);
+		self.push_history();
+	}
 	pub fn set_screen_size(&mut self, width: i32, height: i32) {
 		self.screen_size = Vec2::new(width, height);
 	}
