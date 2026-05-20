@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-chipty = { path = "../../chipty" }
-chipdat = { path = "../../chipdat" }
+chipty = { path = "../chipty" }
+chipdat = { path = "../chipdat" }
 clap.workspace = true
 serde_json.workspace = true

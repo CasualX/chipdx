@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-chipbundle = { path = "../chipbundle" }
+chipbundle = { path = "../../chipbundle" }
 markdown = "1.0"

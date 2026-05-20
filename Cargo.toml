@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+	"./code/chipbundle",
 	"./code/chipdat",
 	"./code/chipcore",
 	"./code/chipedit",
@@ -8,9 +9,8 @@ members = [
 	"./code/chipjni",
 	"./code/chipplay",
 	"./code/chipty",
+	"./code/chipundat",
 	"./code/chipwasm",
-	"./code/scripts/chipbundle",
-	"./code/scripts/chipundat",
 	"./code/scripts/colorkey",
 	"./code/scripts/copyrecords",
 	"./code/scripts/fixcclp3",

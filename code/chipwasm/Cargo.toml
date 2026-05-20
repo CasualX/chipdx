@@ -20,4 +20,4 @@ getrandom_02 = { package = "getrandom", version = "0.2.17", features = ["custom"
 getrandom_03 = { package = "getrandom", version = "0.3.4" }
 
 [build-dependencies]
-chipbundle = { path = "../scripts/chipbundle" }
+chipbundle = { path = "../chipbundle" }

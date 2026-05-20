@@ -21,4 +21,4 @@ jni = "0.21"
 libc = "0.2"
 
 [build-dependencies]
-chipbundle = { path = "../scripts/chipbundle" }
+chipbundle = { path = "../chipbundle" }

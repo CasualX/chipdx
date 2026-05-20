@@ -67,7 +67,7 @@ def utf8_to_codepoints(s: str) -> str:
 
 def main() -> int:
 	script_dir = Path(__file__).resolve().parent
-	data_dir = script_dir / "../../data"
+	data_dir = script_dir / "../../../data"
 	tmp_dir = script_dir / "tmp"
 	exe_path = tmp_dir / EXE_NAME
 
