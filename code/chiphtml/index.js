@@ -95,10 +95,7 @@ window.chipGame = function chipGame() {
 		},
 
 		get overlayStatusText() {
-			if (this.loadingProgress >= 1 && this.wasmGamePtr) {
-				return "Loading game session: Ready to play";
-			}
-			return `Loading game session: ${this.loadingStatus}`;
+			return `Loading game: ${this.loadingStatus}`;
 		},
 
 		get isReadyToPlay() {
@@ -759,7 +756,7 @@ window.chipGame = function chipGame() {
 			}
 			this.wasmGamePtr = gamePtr;
 
-			this.setLoadingStatus("Ready", 1);
+			this.setLoadingStatus("Ready to play", 1);
 
 			const stepMs = 1000 / 60;
 			let acc = 0;
