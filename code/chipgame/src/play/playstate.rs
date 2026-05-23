@@ -363,10 +363,14 @@ impl PlayState {
 					}
 				}
 				menu::MenuEvent::CursorMove => {
-					self.events.push(PlayEvent::PlaySound { sound: chipty::SoundFx::CursorMove });
+					if self.save_data.options.sound_effects {
+						self.events.push(PlayEvent::PlaySound { sound: chipty::SoundFx::CursorMove });
+					}
 				}
 				menu::MenuEvent::CursorSelect => {
-					self.events.push(PlayEvent::PlaySound { sound: chipty::SoundFx::CursorSelect });
+					if self.save_data.options.sound_effects {
+						self.events.push(PlayEvent::PlaySound { sound: chipty::SoundFx::CursorSelect });
+					}
 				}
 				menu::MenuEvent::CloseMenu => {
 					self.menu.close_menu(self.fx.is_some());
@@ -517,7 +521,9 @@ fn play_fx_level_complete(this: &mut PlayState) {
 		(time_high_score < 0 || scores.ticks < time_high_score) ||
 		(steps_high_score < 0 || scores.steps < steps_high_score);
 	if high_score {
-		this.events.push(PlayEvent::PlaySound { sound: chipty::SoundFx::GameWin });
+		if this.save_data.options.sound_effects {
+			this.events.push(PlayEvent::PlaySound { sound: chipty::SoundFx::GameWin });
+		}
 	}
 
 	// Update save data
