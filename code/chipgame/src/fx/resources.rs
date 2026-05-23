@@ -28,7 +28,7 @@ pub struct Resources {
 
 	pub shader: shade::ShaderProgram,
 	pub shader_shadowmap: shade::ShaderProgram,
-	pub pixel_art_bias: f32,
+	pub shader2d_pixelart: shade::ShaderProgram,
 	pub backbuffer_viewport: Bounds2i,
 
 	pub colorshader: shade::ShaderProgram,
@@ -106,7 +106,7 @@ impl Resources {
 
 		resx.shader = resx.shaders.get("PixelArt").unwrap().clone();
 		resx.shader_shadowmap = resx.shaders.get("PixelArtShadowMap").unwrap().clone();
-		resx.pixel_art_bias = config.pixel_art_bias;
+		resx.shader2d_pixelart = g.shader_compile(shaders::PIXELART_VS, shaders::PIXELART_FS);
 		resx.colorshader = resx.shaders.get("Color").unwrap().clone();
 		resx.uishader = resx.shaders.get("UI").unwrap().clone();
 		resx.menubg = resx.textures.get("MenuBG").unwrap().clone();
@@ -114,7 +114,7 @@ impl Resources {
 		if resx.pp.is_none() {
 			resx.pp = Some(PostProcessCopy {
 				quad: shade::d2::PostProcessQuad::create(g),
-				shader: g.shader_compile(shaders::POST_PROCESS_VS, shaders::POST_PROCESS_COPY_FS),
+				shader: g.shader_compile(shaders::POST_PROCESS_VS, shaders::POST_PROCESS_PIXELART_FS),
 			});
 		}
 		resx.renderscale = config.render_scale;

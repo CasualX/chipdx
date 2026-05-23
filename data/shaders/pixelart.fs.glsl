@@ -7,7 +7,6 @@ in vec2 v_texcoord;
 in vec3 v_worldpos;
 
 uniform sampler2D u_tex;
-uniform float u_pixel_bias; // 0.0 = no shift (original filtering), 1.0 = snap to nearest texel center (nearest-like)
 uniform float u_greyscale; // 0.0 = full color, 1.0 = full greyscale
 
 uniform sampler2D u_shadow_map;
@@ -15,32 +14,26 @@ uniform mat4 u_light_matrix;
 uniform float u_shadow_bias;
 uniform vec3 u_shadow_tint;
 
+vec4 sample_pixelart(sampler2D tex, vec2 uv) {
+	vec2 texels = uv * vec2(textureSize(tex, 0));
+	vec2 sample_texels;
+	#ifdef PIXELART_CRISPY
+		sample_texels = floor(texels) + 0.5;
+	#else
+		vec2 seam = floor(texels + 0.5);
+		vec2 footprint = max(fwidth(texels), vec2(1e-6));
+		sample_texels = seam + clamp((texels - seam) / footprint, -0.5, 0.5);
+	#endif
+	return texture(tex, sample_texels / vec2(textureSize(tex, 0)));
+}
+
 void main() {
-	// --- Pixel art UV correction ---
-	vec2 texSize = vec2(textureSize(u_tex, 0));
-	vec2 uv_texel = v_texcoord * texSize;
-
-	// How many texels does one screen pixel cover?
-	vec2 dx = dFdx(uv_texel);
-	vec2 dy = dFdy(uv_texel);
-	float texel_footprint = max(length(dx), length(dy));
-
-	// If we're magnifying (footprint < 1 texel), snap.
-	// If minifying, let hardware filtering + mips handle it.
-	float snap = clamp(1.0 - texel_footprint, 0.0, 1.0);
-
-	// Optional: allow artistic control
-	snap *= u_pixel_bias;
-
-	vec2 uv_snapped = (floor(uv_texel) + 0.5) / texSize;
-	vec2 uv_final = mix(v_texcoord, uv_snapped, snap);
-
-	vec4 color = texture(u_tex, uv_final);
+	vec4 color = sample_pixelart(u_tex, v_texcoord);
 	if (color.a < 0.2) {
 		discard;
 	}
 
-	color *= v_color;
+	color = clamp(v_color * color, 0.0, 1.0);
 
 	float grey = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
 	color.rgb = mix(color.rgb, vec3(grey), u_greyscale);

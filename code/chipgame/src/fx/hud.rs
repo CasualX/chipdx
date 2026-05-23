@@ -53,30 +53,34 @@ impl FxState {
 		}
 
 		// Draw the inventory items
-		cv.uniform.texture = resx.spritesheet_texture;
+		let sprites = pool.get::<shade::d2::TexturedVertex, shade::d2::TexturedUniform>();
+		sprites.blend_mode = shade::BlendMode::Alpha;
+		sprites.shader = resx.shader2d_pixelart;
+		sprites.uniform.transform = Transform2f::ortho(resx.viewport.cast());
+		sprites.uniform.texture = resx.spritesheet_texture;
 		if game.ps.keys[0] > 0 {
-			draw_sprite(cv, resx, chipty::SpriteId::BlueKey, Vec2(keys_x1 + a * 0.5, y), a);
+			draw_sprite(sprites, resx, chipty::SpriteId::BlueKey, Vec2(keys_x1 + a * 0.5, y), a);
 		}
 		if game.ps.keys[1] > 0 {
-			draw_sprite(cv, resx, chipty::SpriteId::RedKey, Vec2(keys_x1 + a * 1.5, y), a);
+			draw_sprite(sprites, resx, chipty::SpriteId::RedKey, Vec2(keys_x1 + a * 1.5, y), a);
 		}
 		if game.ps.keys[2] > 0 {
-			draw_sprite(cv, resx, chipty::SpriteId::GreenKey, Vec2(keys_x1 + a * 2.5, y), a);
+			draw_sprite(sprites, resx, chipty::SpriteId::GreenKey, Vec2(keys_x1 + a * 2.5, y), a);
 		}
 		if game.ps.keys[3] > 0 {
-			draw_sprite(cv, resx, chipty::SpriteId::YellowKey, Vec2(keys_x1 + a * 3.5, y), a);
+			draw_sprite(sprites, resx, chipty::SpriteId::YellowKey, Vec2(keys_x1 + a * 3.5, y), a);
 		}
 		if game.ps.boots.has(chipcore::Boots::FLIPPERS) {
-			draw_sprite(cv, resx, chipty::SpriteId::Flippers, Vec2(items_x1 + a * 0.5, y), a);
+			draw_sprite(sprites, resx, chipty::SpriteId::Flippers, Vec2(items_x1 + a * 0.5, y), a);
 		}
 		if game.ps.boots.has(chipcore::Boots::FIRE_BOOTS) {
-			draw_sprite(cv, resx, chipty::SpriteId::FireBoots, Vec2(items_x1 + a * 1.5, y), a);
+			draw_sprite(sprites, resx, chipty::SpriteId::FireBoots, Vec2(items_x1 + a * 1.5, y), a);
 		}
 		if game.ps.boots.has(chipcore::Boots::ICE_SKATES) {
-			draw_sprite(cv, resx, chipty::SpriteId::IceSkates, Vec2(items_x1 + a * 2.5, y), a);
+			draw_sprite(sprites, resx, chipty::SpriteId::IceSkates, Vec2(items_x1 + a * 2.5, y), a);
 		}
 		if game.ps.boots.has(chipcore::Boots::SUCTION_BOOTS) {
-			draw_sprite(cv, resx, chipty::SpriteId::SuctionBoots, Vec2(items_x1 + a * 3.5, y), a);
+			draw_sprite(sprites, resx, chipty::SpriteId::SuctionBoots, Vec2(items_x1 + a * 3.5, y), a);
 		}
 
 		// Draw the CHIPS and TIME counters
@@ -221,13 +225,13 @@ impl FxState {
 	}
 }
 
-fn draw_sprite(cv: &mut shade::im::DrawBuilder<UiVertex, UiUniform>, resx: &Resources, sprite: chipty::SpriteId, pos: Vec2<f32>, size: f32) {
+fn draw_sprite(cv: &mut shade::d2::TexturedBuffer, resx: &Resources, sprite: chipty::SpriteId, pos: Vec2<f32>, size: f32) {
 	let uv = sprite_uv(&resx.spritesheet_meta, sprite, 0);
-	let color = [255, 255, 255, 255];
-	let top_left = UiVertex { pos: Vec2f::ZERO, uv: uv.top_left(), color };
-	let bottom_left = UiVertex { pos: Vec2f::ZERO, uv: uv.bottom_left(), color };
-	let top_right = UiVertex { pos: Vec2f::ZERO, uv: uv.top_right(), color };
-	let bottom_right = UiVertex { pos: Vec2f::ZERO, uv: uv.bottom_right(), color };
+	let color = Vec4(255, 255, 255, 255);
+	let top_left = shade::d2::TexturedTemplate { uv: uv.top_left(), color };
+	let bottom_left = shade::d2::TexturedTemplate { uv: uv.bottom_left(), color };
+	let top_right = shade::d2::TexturedTemplate { uv: uv.top_right(), color };
+	let bottom_right = shade::d2::TexturedTemplate { uv: uv.bottom_right(), color };
 	let sprite = shade::d2::Sprite { bottom_left, top_left, top_right, bottom_right };
 	cv.sprite_rect(&sprite, &Bounds2(pos, pos + Vec2(size, size)));
 }

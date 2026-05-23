@@ -38,7 +38,6 @@ unsafe impl shade::TVertex for Vertex {
 pub struct Uniform {
 	pub transform: Mat4f,
 	pub texture: shade::Texture2D,
-	pub pixel_bias: f32,
 	pub greyscale: f32,
 
 	pub shadow_map: shade::Texture2D,
@@ -52,7 +51,6 @@ impl Default for Uniform {
 		Uniform {
 			transform: Mat4::IDENTITY,
 			texture: shade::Texture2D::INVALID,
-			pixel_bias: 0.25,
 			greyscale: 0.0,
 
 			shadow_map: shade::Texture2D::INVALID,
@@ -67,7 +65,6 @@ impl shade::UniformVisitor for Uniform {
 	fn visit(&self, set: &mut dyn shade::UniformSetter) {
 		set.value("u_transform", &self.transform);
 		set.value("u_tex", &self.texture);
-		set.value("u_pixel_bias", &self.pixel_bias);
 		set.value("u_greyscale", &self.greyscale);
 		set.value("u_shadow_map", &self.shadow_map);
 		set.value("u_light_matrix", &self.light_matrix);

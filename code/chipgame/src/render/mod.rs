@@ -38,7 +38,6 @@ pub fn drawbg(g: &mut shade::Graphics, resx: &Resources) {
 	cv.cull_mode = None;
 	cv.shader = resx.shader;
 	cv.uniform.texture = resx.menubg;
-	cv.uniform.pixel_bias = resx.pixel_art_bias;
 	let info = g.texture2d_get_info(resx.menubg).unwrap();
 	let tex_w = info.width as f32;
 	let tex_h = info.height as f32;

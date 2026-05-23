@@ -7,16 +7,22 @@ in vec2 v_texcoord;
 in vec3 v_worldpos;
 
 uniform sampler2D u_tex;
-uniform float u_pixel_bias; // 0.0 = no shift (original filtering), 1.0 = snap to nearest texel center (nearest-like)
+
+vec4 sample_pixelart(sampler2D tex, vec2 uv) {
+	vec2 texels = uv * vec2(textureSize(tex, 0));
+	vec2 sample_texels;
+	#ifdef PIXELART_CRISPY
+		sample_texels = floor(texels) + 0.5;
+	#else
+		vec2 seam = floor(texels + 0.5);
+		vec2 footprint = max(fwidth(texels), vec2(1e-6));
+		sample_texels = seam + clamp((texels - seam) / footprint, -0.5, 0.5);
+	#endif
+	return texture(tex, sample_texels / vec2(textureSize(tex, 0)));
+}
 
 void main() {
-	// --- Pixel art UV correction ---
-	vec2 texSize = vec2(textureSize(u_tex, 0));
-	vec2 uv_pix = v_texcoord * texSize;
-	vec2 uv_center = (floor(uv_pix) + 0.5) / texSize;
-	vec2 uv_biased = mix(v_texcoord, uv_center, u_pixel_bias);
-
-	vec4 color = texture(u_tex, uv_biased);
+	vec4 color = sample_pixelart(u_tex, v_texcoord);
 	if (color.a < 0.2) {
 		discard;
 	}

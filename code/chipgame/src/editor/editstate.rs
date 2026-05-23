@@ -188,7 +188,6 @@ impl EditorEditState {
 			cv.shader = resx.shader;
 			cv.uniform.transform = cam.view_proj;
 			cv.uniform.texture = resx.spritesheet_texture;
-			cv.uniform.pixel_bias = resx.pixel_art_bias;
 			cv.uniform.shadow_map = self.fx.render.shadow_map;
 			cv.uniform.light_matrix = self.fx.render.light_matrix;
 

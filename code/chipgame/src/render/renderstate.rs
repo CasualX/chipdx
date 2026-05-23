@@ -75,7 +75,6 @@ impl RenderState {
 		cv.shader = if shadow { resx.shader_shadowmap } else { resx.shader };
 		cv.uniform.transform = camera.view_proj;
 		cv.uniform.texture = resx.spritesheet_texture;
-		cv.uniform.pixel_bias = resx.pixel_art_bias;
 		cv.uniform.shadow_map = self.shadow_map;
 		cv.uniform.light_matrix = self.light_matrix;
 		render::field(&mut cv, camera, self, resx, time);

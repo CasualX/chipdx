@@ -37,7 +37,6 @@ pub struct FontConfig {
 }
 
 pub struct Config {
-	pub pixel_art_bias: f32,
 	pub vsync: bool,
 	pub multisampling: u8,
 	pub render_scale: f32,
@@ -61,7 +60,6 @@ impl Config {
 		}
 
 		let mut section = Section::General;
-		let mut pixel_art_bias = 0.5f32;
 		let mut vsync = false;
 		let mut multisampling = 0;
 		let mut render_scale = 1.0f32;
@@ -76,7 +74,6 @@ impl Config {
 				ini_core::Item::Property(key, Some(value)) => match section {
 					Section::Error => (),
 					Section::General => match key {
-						"PixelArtBias" => { if let Ok(v) = value.parse::<f32>() { pixel_art_bias = v; } }
 						"VSync" => { if let Ok(v) = value.parse::<bool>() { vsync = v; } }
 						"Multisampling" => { if let Ok(v) = value.parse::<u8>() { multisampling = v; } }
 						"RenderScale" => { if let Ok(v) = value.parse::<f32>() { render_scale = v; } }
@@ -162,7 +159,6 @@ impl Config {
 		}
 
 		Config {
-			pixel_art_bias,
 			multisampling,
 			vsync,
 			sound_fx,
