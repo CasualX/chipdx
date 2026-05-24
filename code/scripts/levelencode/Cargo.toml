@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 clap.workspace = true
 chipty = { path = "../../chipty" }
+serde_json.workspace = true
