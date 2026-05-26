@@ -1,19 +1,46 @@
-#version 300 es
+#version unified 330 core, 300 es
+
+#ifdef GLSL_ES
 precision mediump float;
+#endif
 
-out vec4 FragColor;
+#ifdef VERTEX_SHADER
+in vec3 a_pos;
+in vec2 a_texcoord;
+in vec4 a_color;
+#endif
 
-in vec4 v_color;
-in vec2 v_texcoord;
-in vec3 v_worldpos;
+VARYING vec4 v_color;
+VARYING vec2 v_texcoord;
+VARYING vec3 v_worldpos;
 
 uniform sampler2D u_tex;
-uniform float u_greyscale; // 0.0 = full color, 1.0 = full greyscale
-
+uniform mat4 u_transform;
+uniform float u_greyscale;
 uniform sampler2D u_shadow_map;
 uniform mat4 u_light_matrix;
 uniform float u_shadow_bias;
 uniform vec3 u_shadow_tint;
+
+vec3 srgbToLinear(vec3 c) {
+	return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c));
+}
+
+vec4 srgbToLinear(vec4 c) {
+	return vec4(srgbToLinear(c.rgb), c.a);
+}
+
+#ifdef VERTEX_SHADER
+void main() {
+	v_color = srgbToLinear(a_color);
+	v_texcoord = a_texcoord / vec2(textureSize(u_tex, 0));
+	v_worldpos = a_pos;
+	gl_Position = u_transform * vec4(a_pos, 1.0);
+}
+#endif
+
+#ifdef FRAGMENT_SHADER
+out vec4 FragColor;
 
 vec4 sample_pixelart(sampler2D tex, vec2 uv) {
 	vec2 texels = uv * vec2(textureSize(tex, 0));
@@ -39,9 +66,8 @@ void main() {
 	float grey = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
 	color.rgb = mix(color.rgb, vec3(grey), u_greyscale);
 
-	// --- Shadow calculation ---
 	vec4 light_clip = u_light_matrix * vec4(v_worldpos, 1.0);
-	vec3 light_ndc  = light_clip.xyz / light_clip.w;
+	vec3 light_ndc = light_clip.xyz / light_clip.w;
 	vec2 light_uv = light_ndc.xy * 0.5 + 0.5;
 
 	if (light_uv.x < 0.0 || light_uv.x > 1.0 || light_uv.y < 0.0 || light_uv.y > 1.0) {
@@ -50,11 +76,8 @@ void main() {
 	}
 
 	float current_depth = light_ndc.z * 0.5 + 0.5;
-
-	// --- PCF soft shadow ---
 	vec2 texelSize = 1.0 / vec2(textureSize(u_shadow_map, 0));
 
-	// 3x3 kernel
 	float shadow = 0.0;
 	for (int x = -1; x <= 1; x++) {
 		for (int y = -1; y <= 1; y++) {
@@ -65,10 +88,10 @@ void main() {
 	}
 	shadow /= 9.0;
 
-	// --- Apply shadow tint ---
 	vec3 lit = color.rgb;
 	vec3 shaded = color.rgb * u_shadow_tint;
 	color.rgb = mix(shaded, lit, shadow);
 
 	FragColor = color;
 }
+#endif

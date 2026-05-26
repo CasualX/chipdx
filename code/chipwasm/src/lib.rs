@@ -4,7 +4,7 @@ use std::{mem, ptr, str};
 
 mod api;
 
-const CHIPDX_INI: &str = include_str!("../../../chipdx.webgl.ini");
+const CHIPDX_INI: &str = include_str!("../../../chipdx.ini");
 paks::static_bundle!(DATA_PAK = concat!(env!("OUT_DIR"), "/data.paks"));
 paks::static_bundle!(CCLP1_PAK = concat!(env!("OUT_DIR"), "/levelsets/cclp1.paks"));
 paks::static_bundle!(CCLP2_PAK = concat!(env!("OUT_DIR"), "/levelsets/cclp2.paks"));
@@ -59,7 +59,8 @@ fn create_instance() -> Box<Instance> {
 		play: chipgame::play::PlayState::default(),
 	});
 
-	let config = chipgame::config::Config::parse(CHIPDX_INI);
+	let mut config = chipgame::config::Config::parse(CHIPDX_INI);
+	config.render_scale = 0.5;
 	let key = paks::Key::default();
 	let paks = paks::BundleReader::open(&DATA_PAK, key).expect("Failed to open data.paks");
 	let fs = chipgame::FileSystem::Bundle(paks);
@@ -227,7 +228,7 @@ pub extern "C" fn drawInstance(instance: *mut Instance, time: f64, width: i32, h
 	instance.resx.backbuffer_viewport.maxs = cvmath::Vec2i(width, height);
 	instance.resx.update_back(g);
 	instance.play.draw(g, &instance.resx, time);
-	instance.resx.present(g);
+	instance.resx.present(g, time);
 }
 
 #[no_mangle]

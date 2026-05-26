@@ -166,10 +166,12 @@ fn main() {
 
 	let mut file_path = matches.get_one::<path::PathBuf>("level").cloned();
 
-	let config = {
+	let mut config = {
 		let config = fs::read_to_string("chipdx.ini").unwrap_or_default();
 		chipgame::config::Config::parse(config.as_str())
 	};
+	// Override certain config options that don't make sense for the editor
+	config.post_process = chipgame::config::PostProcess::None;
 
 	// VFS
 	let key = paks::Key::default();
@@ -532,7 +534,7 @@ fn main() {
 						let time = time_base.elapsed().as_secs_f64();
 						app.resx.update_back(&mut app.g);
 						editor.draw(&mut app.g, &app.resx, time);
-						app.resx.present(&mut app.g);
+						app.resx.present(&mut app.g, time);
 
 						_ = app.g.get_draw_metrics(true);
 

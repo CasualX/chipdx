@@ -264,7 +264,7 @@ fn main() {
 						let time = time_base.elapsed().as_secs_f64();
 						app.resx.update_back(&mut app.g);
 						state.draw(&mut app.g, &mut app.resx, time);
-						app.resx.present(&mut app.g);
+						app.resx.present(&mut app.g, time);
 
 						state.metrics = app.g.get_draw_metrics(true);
 

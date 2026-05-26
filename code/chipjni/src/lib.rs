@@ -7,7 +7,7 @@ use jni::objects::{GlobalRef, JByteArray, JClass, JObject, JValue};
 use jni::sys::*;
 use jni::{JNIEnv, JavaVM, NativeMethod};
 
-const CHIPDX_INI: &str = include_str!("../../../chipdx.webgl.ini");
+const CHIPDX_INI: &str = include_str!("../../../chipdx.ini");
 const NANOS_PER_SECOND: u64 = 1_000_000_000;
 const FRAME_NANOS: u64 = NANOS_PER_SECOND / chipcore::FPS as u64;
 const JNI_CLASS_NAME: &str = "net/casualhacks/chipdx/ChipJNI";
@@ -388,8 +388,9 @@ extern "system" fn native_frame(_env: JNIEnv, _class: JClass, handle: jlong, fra
 	let g = graphics.as_graphics();
 	instance.resx.backbuffer_viewport.maxs = cvmath::Vec2i(instance.width, instance.height);
 	instance.resx.update_back(g);
-	instance.play.draw(g, &instance.resx, frame_time_nanos as f64 / NANOS_PER_SECOND as f64);
-	instance.resx.present(g);
+	let time = frame_time_nanos as f64 / NANOS_PER_SECOND as f64;
+	instance.play.draw(g, &instance.resx, time);
+	instance.resx.present(g, time);
 	instance.play.metrics = g.get_draw_metrics(true);
 }
 

@@ -4,8 +4,14 @@ use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct ShaderConfig {
-	pub vertex_shader: String,
-	pub fragment_shader: String,
+	pub shader: String,
+}
+
+#[derive(Clone, Copy, Default, Eq, PartialEq)]
+pub enum PostProcess {
+	#[default]
+	None,
+	Crt,
 }
 
 pub struct TextureConfig {
@@ -40,6 +46,7 @@ pub struct Config {
 	pub vsync: bool,
 	pub multisampling: u8,
 	pub render_scale: f32,
+	pub post_process: PostProcess,
 	pub sound_fx: HashMap<chipty::SoundFx, String>,
 	pub music: HashMap<chipty::MusicId, String>,
 	pub shaders: HashMap<String, ShaderConfig>,
@@ -63,6 +70,7 @@ impl Config {
 		let mut vsync = false;
 		let mut multisampling = 0;
 		let mut render_scale = 1.0f32;
+		let mut post_process = PostProcess::None;
 		let mut sound_fx: HashMap<chipty::SoundFx, String> = HashMap::new();
 		let mut music: HashMap<chipty::MusicId, String> = HashMap::new();
 		let mut shaders: HashMap<String, ShaderConfig> = HashMap::new();
@@ -77,6 +85,13 @@ impl Config {
 						"VSync" => { if let Ok(v) = value.parse::<bool>() { vsync = v; } }
 						"Multisampling" => { if let Ok(v) = value.parse::<u8>() { multisampling = v; } }
 						"RenderScale" => { if let Ok(v) = value.parse::<f32>() { render_scale = v; } }
+						"PostProcess" => {
+							post_process = match value {
+								"CRT" => PostProcess::Crt,
+								"None" | "" => PostProcess::None,
+								_ => PostProcess::None,
+							};
+						}
 						_ => {}
 					},
 					Section::SoundFx => {
@@ -92,8 +107,7 @@ impl Config {
 					Section::Shader(name) => {
 						let entry = shaders.entry(name.to_string()).or_default();
 						match key {
-							"VertexShader" => entry.vertex_shader = value.to_string(),
-							"FragmentShader" => entry.fragment_shader = value.to_string(),
+							"Shader" => entry.shader = value.to_string(),
 							_ => {}
 						}
 					}
@@ -161,6 +175,7 @@ impl Config {
 		Config {
 			multisampling,
 			vsync,
+			post_process,
 			sound_fx,
 			music,
 			shaders,

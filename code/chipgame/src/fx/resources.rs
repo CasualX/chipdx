@@ -1,20 +1,52 @@
 use super::*;
 
-cfg_select! {
-	target_arch = "wasm32" => {
-		use shade::shaders::glsl300es as shaders;
-	}
-	target_os = "android" => {
-		use shade::shaders::glsl300es as shaders;
-	}
-	_ => {
-		use shade::shaders::glsl330core as shaders;
+struct ShaderFsInterface<'a> {
+	fs: &'a crate::FileSystem,
+	base: &'a str,
+}
+impl shade::IShaderInterface for ShaderFsInterface<'_> {
+	fn include_source(&mut self, name: &str) -> std::io::Result<String> {
+		if name.contains("..") {
+			return Err(std::io::Error::from(std::io::ErrorKind::InvalidInput));
+		}
+		let path = if self.base.is_empty() {
+			name.to_string()
+		}
+		else {
+			format!("{}/{}", self.base, name)
+		};
+		self.fs.read_to_string(&path)
 	}
 }
 
-pub struct PostProcessCopy {
+fn split_shader_path(path: &str) -> (&str, &str) {
+	path.rsplit_once('/').unwrap_or(("", path))
+}
+
+struct StaticShaderInterface {
+	name: &'static str,
+	source: &'static str,
+}
+impl shade::IShaderInterface for StaticShaderInterface {
+	fn include_source(&mut self, name: &str) -> std::io::Result<String> {
+		if name == self.name {
+			Ok(self.source.to_string())
+		}
+		else {
+			Err(std::io::Error::from(std::io::ErrorKind::NotFound))
+		}
+	}
+}
+
+fn compile_static_shader(g: &mut shade::Graphics, name: &'static str, source: &'static str) -> shade::ShaderProgram {
+	let mut interface = StaticShaderInterface { name, source };
+	g.shader_compile(&mut interface, name, &[])
+}
+
+pub struct PostProcessEffect {
 	pub quad: shade::d2::PostProcessQuad,
-	pub shader: shade::ShaderProgram,
+	pub shader_copy: shade::ShaderProgram,
+	pub shader_crt: shade::ShaderProgram,
 }
 
 #[derive(Default)]
@@ -41,7 +73,8 @@ pub struct Resources {
 	pub backcolor: shade::Texture2D,
 	pub backdepth: shade::Texture2D,
 	pub viewport: Bounds2i,
-	pub pp: Option<PostProcessCopy>,
+	pub pp: Option<PostProcessEffect>,
+	pub post_process: crate::config::PostProcess,
 	pub renderscale: f32,
 }
 
@@ -67,15 +100,15 @@ impl Resources {
 	pub fn load(&mut self, fs: &crate::FileSystem, config: &crate::config::Config, g: &mut shade::Graphics) {
 		let resx = self;
 		for (name, shader) in &config.shaders {
-			let vs = fs.read_to_string(&shader.vertex_shader).expect("Failed to read shader vertex file");
-			let fs = fs.read_to_string(&shader.fragment_shader).expect("Failed to read shader fragment file");
-			let shader = g.shader_compile(&vs, &fs);
+			let (base, shader_name) = split_shader_path(&shader.shader);
+			let mut interface = ShaderFsInterface { fs, base };
+			let shader = g.shader_compile(&mut interface, shader_name, &[]);
 			resx.shaders.insert(name.to_string(), shader);
 		}
 		for (name, texture) in &config.textures {
 			load_png(resx, g, Some(name.as_str()), fs, &texture.path, &texture.props).expect("Failed to load texture");
 		}
-		let shader = g.shader_compile(shaders::MTSDF_VS, shaders::MTSDF_FS);
+		let shader = compile_static_shader(g, "mtsdf.glsl", shade::shaders::MTSDF);
 		for (name, font_config) in &config.fonts {
 			let font = fs.read_to_string(&font_config.meta).expect("Failed to read font meta file");
 			let font: shade::msdfgen::FontDto = serde_json::from_str(&font).expect("Failed to parse font meta file");
@@ -106,17 +139,19 @@ impl Resources {
 
 		resx.shader = resx.shaders.get("PixelArt").unwrap().clone();
 		resx.shader_shadowmap = resx.shaders.get("PixelArtShadowMap").unwrap().clone();
-		resx.shader2d_pixelart = g.shader_compile(shaders::PIXELART_VS, shaders::PIXELART_FS);
+		resx.shader2d_pixelart = compile_static_shader(g, "pixelart.glsl", shade::shaders::PIXELART);
 		resx.colorshader = resx.shaders.get("Color").unwrap().clone();
 		resx.uishader = resx.shaders.get("UI").unwrap().clone();
 		resx.menubg = resx.textures.get("MenuBG").unwrap().clone();
 		resx.menubg_scale = 2.0 * config.render_scale;
 		if resx.pp.is_none() {
-			resx.pp = Some(PostProcessCopy {
+			resx.pp = Some(PostProcessEffect {
 				quad: shade::d2::PostProcessQuad::create(g),
-				shader: g.shader_compile(shaders::POST_PROCESS_VS, shaders::POST_PROCESS_PIXELART_FS),
+				shader_copy: compile_static_shader(g, "post_process.copy.glsl", shade::shaders::POST_PROCESS_COPY),
+				shader_crt: compile_static_shader(g, "post_process.crt.glsl", shade::shaders::POST_PROCESS_CRT),
 			});
 		}
+		resx.post_process = config.post_process;
 		resx.renderscale = config.render_scale;
 	}
 
@@ -154,16 +189,31 @@ impl Resources {
 		});
 	}
 
-	pub fn present(&self, g: &mut shade::Graphics) {
+	pub fn present(&self, g: &mut shade::Graphics, time: f64) {
 		g.begin(&shade::BeginArgs::BackBuffer {
 			viewport: self.backbuffer_viewport,
 		});
 		if let Some(pp) = &self.pp {
-			pp.quad.draw(g, pp.shader, shade::BlendMode::Solid, &[
-				&shade::UniformFn(|set| {
-					set.value("u_texture", &self.backcolor);
-				})
-			]);
+			match self.post_process {
+				crate::config::PostProcess::None => {
+					pp.quad.draw(g, pp.shader_copy, shade::BlendMode::Solid, &[
+						&shade::shaders::PostProcessCopyUniforms {
+							texture: self.backcolor,
+						}
+					]);
+				}
+				crate::config::PostProcess::Crt => {
+					pp.quad.draw(g, pp.shader_crt, shade::BlendMode::Solid, &[
+						&shade::shaders::PostProcessCrtUniforms {
+							texture: self.backcolor,
+							scanline_count: self.viewport.height() as f32 * 0.25,
+							rgb_shift: 0.0,
+							time: time as f32,
+							..Default::default()
+						}
+					]);
+				}
+			}
 		}
 		g.end();
 	}
