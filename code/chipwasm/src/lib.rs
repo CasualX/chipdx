@@ -244,14 +244,19 @@ extern "C" fn chipgame_read_file(path_ptr: *const u8, path_len: usize, content_p
 		if api::readFile(path_ptr, path_len, ptr::null_mut(), &mut size as *mut usize) != 0 {
 			return -1;
 		}
-		let content = &mut *content_ptr;
-		content.as_mut_vec().set_len(0);
-		content.reserve(size);
+		let mut content = vec![0u8; size];
 		let mut read = size;
-		if api::readFile(path_ptr, path_len, content.as_mut_ptr() as *mut u8, &mut read as *mut usize) != 0 {
+		if api::readFile(path_ptr, path_len, content.as_mut_ptr(), &mut read as *mut usize) != 0 {
 			return -1;
 		}
-		content.as_mut_vec().set_len(read);
+		if read > content.len() {
+			return -1;
+		}
+		content.truncate(read);
+		let Ok(content) = String::from_utf8(content) else {
+			return -1;
+		};
+		*content_ptr = content;
 		return 0;
 	}
 }
