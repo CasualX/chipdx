@@ -1,4 +1,5 @@
 
+#[link(wasm_import_module = "env")]
 extern "C" {
 	fn randomBytes(ptr: *mut u8, len: usize);
 	pub fn playSound(sound_id: i32);
