@@ -90,6 +90,7 @@ cp code/chiphtml/*.js "$repo_root/gh-pages/"
 cp code/chiphtml/*.css "$repo_root/gh-pages/"
 cp code/chiphtml/*.html "$repo_root/gh-pages/"
 cp code/chiphtml/*.png "$repo_root/gh-pages/"
+cp code/chiphtml/*.ico "$repo_root/gh-pages/"
 cp docs/social-preview.png "$repo_root/gh-pages/social-preview.png"
 cp target/wasm32-unknown-unknown/release/chipwasm.wasm "$repo_root/gh-pages/chipwasm.wasm"
 

@@ -28,3 +28,6 @@ gilrs = { version = "0.11", default-features = false, features = ["xinput"] }
 soloud = "1.1"
 
 rustydialogs = { version = "0.4", features = ["gtk3"] }
+
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"
