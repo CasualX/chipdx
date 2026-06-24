@@ -74,11 +74,11 @@ impl OptionsMenu {
 	pub fn draw(&mut self, g: &mut shade::Graphics, resx: &Resources) {
 		let mut buf = shade::d2::TextBuffer::new();
 		buf.blend_mode = shade::BlendMode::Alpha;
-		buf.shader = resx.font.shader;
+		buf.shader = Some(&*resx.font.shader);
 
 		let rect = resx.viewport.cast();
 		buf.uniform.transform = Transform2f::ortho(rect);
-		buf.uniform.texture = resx.font.texture;
+		buf.uniform.texture = &*resx.font.texture;
 
 		let get_flag = |state| if state { "\x1b[color=#0f0]ON" } else { "\x1b[color=#f00]OFF" };
 		let get_zoom = |mode| match mode {

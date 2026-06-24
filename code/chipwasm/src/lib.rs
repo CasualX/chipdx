@@ -45,27 +45,23 @@ fn quit_game(instance: &mut Instance) {
 }
 
 pub struct Instance {
-	graphics: shade::webgl::WebGLGraphics,
 	resx: chipgame::fx::Resources,
+	graphics: shade::webgl::WebGLGraphics,
 	play: chipgame::play::PlayState,
 }
 
 fn create_instance() -> Box<Instance> {
-	let mut instance = Box::new(Instance {
-		graphics: shade::webgl::WebGLGraphics::new(shade::webgl::WebGLConfig {
-			srgb: false,
-		}),
-		resx: chipgame::fx::Resources::default(),
-		play: chipgame::play::PlayState::default(),
-	});
-
 	let mut config = chipgame::config::Config::parse(CHIPDX_INI);
 	config.render_scale = 0.5;
 	let key = paks::Key::default();
 	let paks = paks::BundleReader::open(&DATA_PAK, key).expect("Failed to open data.paks");
 	let fs = chipgame::FileSystem::Bundle(paks);
-	instance.resx.load(&fs, &config, instance.graphics.as_graphics());
-	return instance;
+	let mut graphics = shade::webgl::WebGLGraphics::new(shade::webgl::WebGLConfig {
+		srgb: false,
+	});
+	let resx = chipgame::fx::Resources::load(&fs, &config, graphics.as_graphics());
+	let play = chipgame::play::PlayState::default();
+	Box::new(Instance { graphics, resx, play })
 }
 
 fn load_levelset(data: &'static [paks::Block], name: String, play: &mut chipgame::play::PlayState) {

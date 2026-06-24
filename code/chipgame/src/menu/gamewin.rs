@@ -32,9 +32,9 @@ impl Fireworks {
 
 			let mut buf = shade::im::DrawBuilder::<UiVertex, UiUniform>::new();
 			buf.blend_mode = shade::BlendMode::Alpha;
-			buf.shader = resx.uishader;
+			buf.shader = Some(resx.uishader.as_ref());
 			buf.uniform.transform = Transform2f::ortho(resx.viewport.cast());
-			buf.uniform.texture = resx.effects;
+			buf.uniform.texture = resx.effects.as_ref();
 			let rc = Bounds2f::point(self.pos, Vec2f(d_size, d_size) * 0.5);
 			let color = [255; 4];
 			let sprite = shade::d2::Sprite {
@@ -94,11 +94,11 @@ impl GameWinMenu {
 	pub fn draw(&mut self, g: &mut shade::Graphics, resx: &Resources, time: f64) {
 		let mut buf = shade::d2::TextBuffer::new();
 		buf.blend_mode = shade::BlendMode::Alpha;
-		buf.shader = resx.font.shader;
+		buf.shader = Some(&*resx.font.shader);
 
 		let rect = resx.viewport.cast();
 		buf.uniform.transform = Transform2f::ortho(rect);
-		buf.uniform.texture = resx.font.texture;
+		buf.uniform.texture = &*resx.font.texture;
 
 		let [top, middle, bottom] = draw::flexv(rect, None, layout::Justify::Start, &[layout::Unit::Fr(1.0); 3]);
 

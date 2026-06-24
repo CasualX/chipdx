@@ -102,11 +102,11 @@ impl GoToLevel {
 	pub fn draw(&mut self, g: &mut shade::Graphics, resx: &Resources) {
 		let mut buf = shade::d2::TextBuffer::new();
 		buf.blend_mode = shade::BlendMode::Alpha;
-		buf.shader = resx.font.shader;
+		buf.shader = Some(&*resx.font.shader);
 
 		let rect = resx.viewport.cast();
 		buf.uniform.transform = Transform2f::ortho(rect);
-		buf.uniform.texture = resx.font.texture;
+		buf.uniform.texture = &*resx.font.texture;
 
 		let size = resx.viewport.height() as f32 * FONT_SIZE;
 

@@ -38,81 +38,81 @@ impl shade::IShaderInterface for StaticShaderInterface {
 	}
 }
 
-fn compile_static_shader(g: &mut shade::Graphics, name: &'static str, source: &'static str) -> shade::ShaderProgram {
+fn compile_static_shader(g: &mut shade::Graphics, name: &'static str, source: &'static str) -> Box<dyn shade::ShaderProgram> {
 	let mut interface = StaticShaderInterface { name, source };
 	g.shader_compile(&mut interface, name, &[])
 }
 
 pub struct PostProcessEffect {
 	pub quad: shade::d2::PostProcessQuad,
-	pub shader_copy: shade::ShaderProgram,
-	pub shader_crt: shade::ShaderProgram,
+	pub shader_copy: Box<dyn shade::ShaderProgram>,
+	pub shader_crt: Box<dyn shade::ShaderProgram>,
 }
 
-#[derive(Default)]
 pub struct Resources {
-	pub textures: HashMap<String, shade::Texture2D>,
-	pub shaders: HashMap<String, shade::ShaderProgram>,
-
-	pub effects: shade::Texture2D,
-	pub spritesheet_texture: shade::Texture2D,
+	pub effects: Box<dyn shade::Texture2D>,
+	pub spritesheet_texture: Box<dyn shade::Texture2D>,
 	pub spritesheet_meta: chipty::SpriteSheet<chipty::SpriteId>,
 
-	pub shader: shade::ShaderProgram,
-	pub shader_shadowmap: shade::ShaderProgram,
-	pub shader2d_pixelart: shade::ShaderProgram,
+	pub shader: Box<dyn shade::ShaderProgram>,
+	pub shader_shadowmap: Box<dyn shade::ShaderProgram>,
+	pub shader2d_pixelart: Box<dyn shade::ShaderProgram>,
 	pub backbuffer_viewport: Bounds2i,
 
-	pub colorshader: shade::ShaderProgram,
-	pub uishader: shade::ShaderProgram,
-	pub menubg: shade::Texture2D,
+	pub colorshader: Box<dyn shade::ShaderProgram>,
+	pub uishader: Box<dyn shade::ShaderProgram>,
+	pub menubg: Box<dyn shade::Texture2D>,
 	pub menubg_scale: f32,
 
-	pub font: shade::d2::FontResource<Option<shade::msdfgen::Font>>,
+	pub font: shade::d2::FontResource<shade::atlas::Font>,
 
-	pub backcolor: shade::Texture2D,
-	pub backdepth: shade::Texture2D,
+	pub backcolor: Option<Box<dyn shade::Texture2D>>,
+	pub backdepth: Option<Box<dyn shade::Texture2D>>,
 	pub viewport: Bounds2i,
-	pub pp: Option<PostProcessEffect>,
+	pub pp: PostProcessEffect,
 	pub post_process: crate::config::PostProcess,
 	pub renderscale: f32,
 }
 
 #[track_caller]
 fn load_png(
-	resx: &mut Resources,
 	g: &mut shade::Graphics,
-	name: Option<&str>,
 	fs: &crate::FileSystem,
 	path: &str,
 	props: &shade::TextureProps,
-) -> Result<shade::Texture2D, shade::image::LoadImageError> {
+) -> Result<Box<dyn shade::Texture2D>, shade::image::LoadImageError> {
 	let data = fs.read(path).expect("Failed to read PNG file");
 	let image = shade::image::DecodedImage::load_memory_png(data.as_slice())?;
-	let tex = g.image(&(&image, props));
-	if let Some(name) = name {
-		resx.textures.insert(name.to_string(), tex);
-	}
-	Ok(tex)
+	Ok(g.image(&props.bind(&image)))
 }
 
 impl Resources {
-	pub fn load(&mut self, fs: &crate::FileSystem, config: &crate::config::Config, g: &mut shade::Graphics) {
-		let resx = self;
+	pub fn backcolor(&self) -> &dyn shade::Texture2D {
+		&**self.backcolor.as_ref().expect("back color texture has not been created")
+	}
+
+	pub fn backdepth(&self) -> &dyn shade::Texture2D {
+		&**self.backdepth.as_ref().expect("back depth texture has not been created")
+	}
+
+	pub fn load(fs: &crate::FileSystem, config: &crate::config::Config, g: &mut shade::Graphics) -> Resources {
+		let mut shaders = HashMap::<String, Box<dyn shade::ShaderProgram>>::new();
 		for (name, shader) in &config.shaders {
 			let (base, shader_name) = split_shader_path(&shader.shader);
 			let mut interface = ShaderFsInterface { fs, base };
 			let shader = g.shader_compile(&mut interface, shader_name, &[]);
-			resx.shaders.insert(name.to_string(), shader);
+			shaders.insert(name.to_string(), shader);
 		}
+		let mut textures = HashMap::<String, Box<dyn shade::Texture2D>>::new();
 		for (name, texture) in &config.textures {
-			load_png(resx, g, Some(name.as_str()), fs, &texture.path, &texture.props).expect("Failed to load texture");
+			let texture = load_png(g, fs, &texture.path, &texture.props).expect("Failed to load texture");
+			textures.insert(name.to_string(), texture);
 		}
-		let shader = compile_static_shader(g, "mtsdf.glsl", shade::shaders::MTSDF);
-		for (name, font_config) in &config.fonts {
+		let font = {
+			let font_config = config.fonts.get("Default").expect("Default font is not configured");
 			let font = fs.read_to_string(&font_config.meta).expect("Failed to read font meta file");
 			let font: shade::msdfgen::FontDto = serde_json::from_str(&font).expect("Failed to parse font meta file");
-			let font: Option<shade::msdfgen::Font> = Some(font.into());
+			let font: shade::atlas::Font = font.into();
 			let data = fs.read(&font_config.atlas).expect("Failed to read font atlas file");
 			let image = shade::image::DecodedImage::load_memory_png(data.as_slice()).expect("Failed to decode font atlas PNG");
 			let image = image.to_rgba().map_colors(|[r, g, b, a]| shade::color::Rgba8 { r, g, b, a });
@@ -126,40 +126,48 @@ impl Resources {
 				..Default::default()
 			};
 			let texture = g.image(&(&image, &props));
-			resx.textures.insert(name.to_string(), texture);
-			// let texture = load_png(g, Some(name.as_str()), fs, &font_config.atlas, &).expect("Failed to load font atlas");
-			let font = shade::d2::FontResource { font, shader, texture };
-			resx.font = font;
-		}
+			let shader = compile_static_shader(g, "mtsdf.glsl", shade::shaders::MTSDF);
+			shade::d2::FontResource { font, shader, texture }
+		};
 
-		resx.effects = resx.textures.get("Effects").unwrap().clone();
-		resx.spritesheet_texture = resx.textures.get("SpriteSheet").unwrap().clone();
 		let spritesheet_meta = fs.read_to_string("spritesheet.json").expect("Failed to read spritesheet metadata");
-		resx.spritesheet_meta = serde_json::from_str(&spritesheet_meta).expect("Failed to parse spritesheet metadata");
+		let spritesheet_meta = serde_json::from_str(&spritesheet_meta).expect("Failed to parse spritesheet metadata");
 
-		resx.shader = resx.shaders.get("PixelArt").unwrap().clone();
-		resx.shader_shadowmap = resx.shaders.get("PixelArtShadowMap").unwrap().clone();
-		resx.shader2d_pixelart = compile_static_shader(g, "pixelart.glsl", shade::shaders::PIXELART);
-		resx.colorshader = resx.shaders.get("Color").unwrap().clone();
-		resx.uishader = resx.shaders.get("UI").unwrap().clone();
-		resx.menubg = resx.textures.get("MenuBG").unwrap().clone();
-		resx.menubg_scale = 2.0 * config.render_scale;
-		if resx.pp.is_none() {
-			resx.pp = Some(PostProcessEffect {
+		Resources {
+			effects: textures.remove("Effects").expect("Effects texture is not configured"),
+			spritesheet_texture: textures.remove("SpriteSheet").expect("SpriteSheet texture is not configured"),
+			spritesheet_meta,
+
+			shader: shaders.remove("PixelArt").expect("PixelArt shader is not configured"),
+			shader_shadowmap: shaders.remove("PixelArtShadowMap").expect("PixelArtShadowMap shader is not configured"),
+			shader2d_pixelart: compile_static_shader(g, "pixelart.glsl", shade::shaders::PIXELART),
+			backbuffer_viewport: Bounds2i::ZERO,
+
+			colorshader: shaders.remove("Color").expect("Color shader is not configured"),
+			uishader: shaders.remove("UI").expect("UI shader is not configured"),
+			menubg: textures.remove("MenuBG").expect("MenuBG texture is not configured"),
+			menubg_scale: 2.0 * config.render_scale,
+
+			font,
+
+			backcolor: None,
+			backdepth: None,
+			viewport: Bounds2i::ZERO,
+			pp: PostProcessEffect {
 				quad: shade::d2::PostProcessQuad::create(g),
 				shader_copy: compile_static_shader(g, "post_process.copy.glsl", shade::shaders::POST_PROCESS_COPY),
 				shader_crt: compile_static_shader(g, "post_process.crt.glsl", shade::shaders::POST_PROCESS_CRT),
-			});
+			},
+			post_process: config.post_process,
+			renderscale: config.render_scale,
 		}
-		resx.post_process = config.post_process;
-		resx.renderscale = config.render_scale;
 	}
 
 	pub fn update_back(&mut self, g: &mut shade::Graphics) {
 		let width = (self.backbuffer_viewport.width() as f32 * self.renderscale) as i32;
 		let height = (self.backbuffer_viewport.height() as f32 * self.renderscale) as i32;
 		self.viewport = Bounds2!(0, 0, width, height);
-		self.backcolor = g.texture2d_update(self.backcolor, &shade::Texture2DInfo {
+		let color_info = shade::Texture2DInfo {
 			width,
 			height,
 			format: shade::TextureFormat::SRGBA8,
@@ -172,8 +180,9 @@ impl Resources {
 				wrap_v: shade::TextureWrap::Edge,
 				..Default::default()
 			}
-		});
-		self.backdepth = g.texture2d_update(self.backdepth, &shade::Texture2DInfo {
+		};
+		g.texture2d_ensure(&mut self.backcolor, &color_info);
+		let depth_info = shade::Texture2DInfo {
 			width,
 			height,
 			format: shade::TextureFormat::Depth24,
@@ -186,33 +195,32 @@ impl Resources {
 				wrap_v: shade::TextureWrap::Edge,
 				..Default::default()
 			}
-		});
+		};
+		g.texture2d_ensure(&mut self.backdepth, &depth_info);
 	}
 
 	pub fn present(&self, g: &mut shade::Graphics, time: f64) {
 		g.begin(&shade::BeginArgs::BackBuffer {
 			viewport: self.backbuffer_viewport,
 		});
-		if let Some(pp) = &self.pp {
-			match self.post_process {
-				crate::config::PostProcess::None => {
-					pp.quad.draw(g, pp.shader_copy, shade::BlendMode::Solid, &[
-						&shade::shaders::PostProcessCopyUniforms {
-							texture: self.backcolor,
-						}
-					]);
-				}
-				crate::config::PostProcess::Crt => {
-					pp.quad.draw(g, pp.shader_crt, shade::BlendMode::Solid, &[
-						&shade::shaders::PostProcessCrtUniforms {
-							texture: self.backcolor,
-							scanline_count: self.viewport.height() as f32 * 0.25,
-							rgb_shift: 0.0,
-							time: time as f32,
-							..Default::default()
-						}
-					]);
-				}
+		match self.post_process {
+			crate::config::PostProcess::None => {
+				self.pp.quad.draw(g, &*self.pp.shader_copy, shade::BlendMode::Solid, &[
+					&shade::shaders::PostProcessCopyUniforms {
+						texture: self.backcolor(),
+					}
+				]);
+			}
+			crate::config::PostProcess::Crt => {
+				self.pp.quad.draw(g, &*self.pp.shader_crt, shade::BlendMode::Solid, &[
+					&shade::shaders::PostProcessCrtUniforms {
+						texture: self.backcolor(),
+						scanline_count: self.viewport.height() as f32 * 0.25,
+						rgb_shift: 0.0,
+						time: time as f32,
+						..Default::default()
+					}
+				]);
 			}
 		}
 		g.end();

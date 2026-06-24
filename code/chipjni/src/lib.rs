@@ -242,8 +242,8 @@ fn load_egl(name: &str) -> *const c_void {
 }
 
 pub struct Instance {
+	resx: Option<chipgame::fx::Resources>,
 	graphics: Option<shade::gl::GlGraphics>,
-	resx: chipgame::fx::Resources,
 	play: chipgame::play::PlayState,
 	config: chipgame::config::Config,
 	buttons: u8,
@@ -258,7 +258,7 @@ impl Instance {
 	fn new() -> Self {
 		Self {
 			graphics: None,
-			resx: chipgame::fx::Resources::default(),
+			resx: None,
 			play: chipgame::play::PlayState::default(),
 			config: chipgame::config::Config::parse(CHIPDX_INI),
 			buttons: 0,
@@ -273,10 +273,13 @@ impl Instance {
 	fn rebuild_surface_state(&mut self) {
 		shade::gl::capi::load_with(load_egl);
 
+		// GPU resources must be dropped before their owning graphics backend.
+		self.resx = None;
+		self.graphics = None;
+
 		let fs = build_data_fs();
 		let mut graphics = shade::gl::GlGraphics::new(shade::gl::GlConfig { srgb: false });
-		let mut resx = chipgame::fx::Resources::default();
-		resx.load(&fs, &self.config, graphics.as_graphics());
+		let mut resx = chipgame::fx::Resources::load(&fs, &self.config, graphics.as_graphics());
 		resx.backbuffer_viewport.maxs = cvmath::Vec2i(self.width.max(1), self.height.max(1));
 
 		let mut play = chipgame::play::PlayState::default();
@@ -284,7 +287,7 @@ impl Instance {
 		play.launch(graphics.as_graphics());
 
 		self.graphics = Some(graphics);
-		self.resx = resx;
+		self.resx = Some(resx);
 		self.play = play;
 		self.last_frame_nanos = None;
 		self.tick_budget_nanos = FRAME_NANOS / 2;
@@ -356,7 +359,9 @@ extern "system" fn native_on_surface_changed(_env: JNIEnv, _class: JClass, handl
 	let Some(instance) = unsafe_as_instance(handle) else { return };
 	instance.width = width.max(1);
 	instance.height = height.max(1);
-	instance.resx.backbuffer_viewport.maxs = cvmath::Vec2i(instance.width, instance.height);
+	if let Some(resx) = &mut instance.resx {
+		resx.backbuffer_viewport.maxs = cvmath::Vec2i(instance.width, instance.height);
+	}
 }
 
 extern "system" fn native_set_buttons(_env: JNIEnv, _class: JClass, handle: jlong, buttons: jint) {
@@ -366,7 +371,7 @@ extern "system" fn native_set_buttons(_env: JNIEnv, _class: JClass, handle: jlon
 
 extern "system" fn native_frame(_env: JNIEnv, _class: JClass, handle: jlong, frame_time_nanos: jlong) {
 	let Some(instance) = unsafe_as_instance(handle) else { return };
-	if instance.graphics.is_none() {
+	if instance.graphics.is_none() || instance.resx.is_none() {
 		return;
 	}
 
@@ -385,12 +390,13 @@ extern "system" fn native_frame(_env: JNIEnv, _class: JClass, handle: jlong, fra
 	instance.handle_events();
 
 	let graphics = instance.graphics.as_mut().unwrap();
+	let resx = instance.resx.as_mut().unwrap();
 	let g = graphics.as_graphics();
-	instance.resx.backbuffer_viewport.maxs = cvmath::Vec2i(instance.width, instance.height);
-	instance.resx.update_back(g);
+	resx.backbuffer_viewport.maxs = cvmath::Vec2i(instance.width, instance.height);
+	resx.update_back(g);
 	let time = frame_time_nanos as f64 / NANOS_PER_SECOND as f64;
-	instance.play.draw(g, &instance.resx, time);
-	instance.resx.present(g, time);
+	instance.play.draw(g, resx, time);
+	resx.present(g, time);
 	instance.play.metrics = g.get_draw_metrics(true);
 }
 

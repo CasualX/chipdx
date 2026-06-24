@@ -9,7 +9,7 @@ pub struct DrawScoreCard {
 	pub steps_high_score: i32,
 }
 impl DrawScoreCard {
-	pub fn draw(&self, buf: &mut shade::d2::TextBuffer, rect: &Bounds2<f32>, resx: &Resources) {
+	pub fn draw<'a>(&self, buf: &mut shade::d2::TextBuffer<'a>, rect: &Bounds2<f32>, resx: &'a Resources) {
 		let size = resx.viewport.height() as f32 * FONT_SIZE;
 
 		let mut scribe = shade::d2::Scribe {

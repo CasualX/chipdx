@@ -33,7 +33,7 @@ ini_core = "0.2"
 clap = { version = "4.5", features = ["cargo"] }
 cvar = "0.4"
 
-cvmath = { version = "0.0.8", features=["serde", "dataview"] }
+cvmath = { version = "0.1.1", features=["serde", "dataview"] }
 fmtools = "0.1"
 
 urandom = "0.2"

@@ -38,13 +38,13 @@ impl LevelSetMenu {
 		if let Some(Some(splash)) = self.splash.get(self.selected) {
 			let cv = pool.get::<UiVertex, UiUniform>();
 			cv.blend_mode = shade::BlendMode::Alpha;
-			cv.shader = resx.uishader;
+			cv.shader = Some(resx.uishader.as_ref());
 
 			let rect = resx.viewport.cast();
 			cv.uniform.transform = Transform2f::ortho(rect);
 
 			let time = self.ntime as f64 / 60.0;
-			cv.uniform.texture = splash.get_frame(time);
+			cv.uniform.texture = splash.get_frame(time).unwrap_or(&shade::DefaultTexture2D);
 
 			let ss = resx.viewport.size();
 			let color = [128, 128, 128, 255];
@@ -64,11 +64,11 @@ impl LevelSetMenu {
 
 		let buf = pool.get::<shade::d2::TextVertex, shade::d2::TextUniform>();
 		buf.blend_mode = shade::BlendMode::Alpha;
-		buf.shader = resx.font.shader;
+		buf.shader = Some(&*resx.font.shader);
 
 		let rect = resx.viewport.cast();
 		buf.uniform.transform = Transform2f::ortho(rect);
-		buf.uniform.texture = resx.font.texture;
+		buf.uniform.texture = &*resx.font.texture;
 
 		let [top, bottom, _] = draw::flexv(rect, None, layout::Justify::Center, &[layout::Unit::Fr(1.0), layout::Unit::Fr(3.0), layout::Unit::Fr(1.0)]);
 

@@ -39,29 +39,35 @@ impl shade::d2::ToVertex<UiVertex> for UiVertex {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct UiUniform {
+pub struct UiUniform<'a> {
 	pub transform: Transform2f,
-	pub texture: shade::Texture2D,
+	pub texture: &'a dyn shade::Texture2D,
 	pub color: Vec4f,
 	pub gamma: f32,
 }
 
-impl Default for UiUniform {
+impl Default for UiUniform<'_> {
 	fn default() -> Self {
 		UiUniform {
 			transform: Transform2f::IDENTITY,
-			texture: shade::Texture2D::INVALID,
+			texture: &shade::DefaultTexture2D,
 			color: Vec4f(1.0, 1.0, 1.0, 1.0),
 			gamma: 2.2,
 		}
 	}
 }
 
-impl shade::UniformVisitor for UiUniform {
+impl shade::UniformVisitor for UiUniform<'_> {
 	fn visit(&self, set: &mut dyn shade::UniformSetter) {
 		set.value("u_transform", &self.transform);
-		set.value("u_texture", &self.texture);
+		set.value("u_texture", self.texture);
 		set.value("u_color", &self.color);
 		set.value("u_gamma", &self.gamma);
+	}
+}
+
+unsafe impl<'a> shade::TUniformKey for UiUniform<'a> {
+	fn key() -> std::any::TypeId {
+		std::any::TypeId::of::<UiUniform<'static>>()
 	}
 }

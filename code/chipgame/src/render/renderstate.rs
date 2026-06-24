@@ -1,5 +1,4 @@
 use super::*;
-
 #[derive(Clone, Default)]
 pub struct RenderField {
 	pub width: i32,
@@ -33,17 +32,34 @@ pub struct UpdateCtx {
 	pub dt: f64,
 }
 
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub struct RenderState {
 	pub objects: ObjectMap,
 	pub field: RenderField,
 	pub effects: Vec<Effect>,
 	pub tiles: &'static [TileGfx],
-	pub shadow_map: shade::Texture2D,
+	pub shadow_map: Option<Box<dyn shade::Texture2D>>,
 	pub light_matrix: Mat4f,
 }
 
+impl Clone for RenderState {
+	fn clone(&self) -> Self {
+		Self {
+			objects: self.objects.clone(),
+			field: self.field.clone(),
+			effects: self.effects.clone(),
+			tiles: self.tiles,
+			shadow_map: None,
+			light_matrix: self.light_matrix,
+		}
+	}
+}
+
 impl RenderState {
+	pub fn shadow_map(&self) -> &dyn shade::Texture2D {
+		&**self.shadow_map.as_ref().expect("shadow map texture has not been created")
+	}
+
 	pub fn clear(&mut self) {
 		self.objects.clear();
 		self.field.width = 0;
@@ -58,9 +74,9 @@ impl RenderState {
 	pub fn draw(&self, g: &mut shade::Graphics, resx: &Resources, camera: &shade::d3::Camera, time: f64) {
 		g.begin(&shade::BeginArgs::Immediate {
 			viewport: resx.viewport,
-			color: &[resx.backcolor],
+			color: &[resx.backcolor()],
 			levels: None,
-			depth: resx.backdepth,
+			depth: Some(resx.backdepth()),
 		});
 
 		self.draw_field(g, resx, camera, time, false);
@@ -72,10 +88,10 @@ impl RenderState {
 		let mut cv = shade::im::DrawBuilder::<render::Vertex, render::Uniform>::new();
 		cv.depth_test = Some(shade::Compare::LessEqual);
 		cv.cull_mode = Some(shade::CullMode::CW);
-		cv.shader = if shadow { resx.shader_shadowmap } else { resx.shader };
+		cv.shader = Some(if shadow { resx.shader_shadowmap.as_ref() } else { resx.shader.as_ref() });
 		cv.uniform.transform = camera.view_proj;
-		cv.uniform.texture = resx.spritesheet_texture;
-		cv.uniform.shadow_map = self.shadow_map;
+		cv.uniform.texture = resx.spritesheet_texture.as_ref();
+		cv.uniform.shadow_map = self.shadow_map();
 		cv.uniform.light_matrix = self.light_matrix;
 		render::field(&mut cv, camera, self, resx, time);
 		cv.draw(g);
@@ -86,9 +102,9 @@ impl RenderState {
 		cv.depth_test = Some(shade::Compare::Always);
 		// cv.cull_mode = Some(shade::CullMode::CW);
 
-		cv.shader = resx.shader;
+		cv.shader = Some(resx.shader.as_ref());
 		cv.uniform.transform = camera.view_proj;
-		cv.uniform.texture = resx.effects;
+		cv.uniform.texture = resx.effects.as_ref();
 
 		for efx in &self.effects {
 			efx.draw(&mut cv, time);

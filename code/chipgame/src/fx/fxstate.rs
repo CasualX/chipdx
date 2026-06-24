@@ -253,9 +253,9 @@ impl FxState {
 		if self.hud_enabled {
 			g.begin(&shade::BeginArgs::Immediate {
 				viewport: resx.viewport,
-				color: &[resx.backcolor],
+				color: &[resx.backcolor()],
 				levels: None,
-				depth: resx.backdepth,
+				depth: Some(resx.backdepth()),
 			});
 			self.render_ui(g, resx, time);
 			g.end();
@@ -384,7 +384,7 @@ impl FxState {
 
 	fn draw_shadow_map(&mut self, g: &mut shade::Graphics, resx: &Resources) {
 		const SIZE: i32 = 2048;
-		self.render.shadow_map = g.texture2d_update(self.render.shadow_map, &shade::Texture2DInfo {
+		let info = shade::Texture2DInfo {
 			format: shade::TextureFormat::Depth24,
 			width: SIZE,
 			height: SIZE,
@@ -398,7 +398,8 @@ impl FxState {
 				border_color: [1.0, 1.0, 1.0, 1.0],
 				..Default::default()
 			},
-		});
+		};
+		g.texture2d_ensure(&mut self.render.shadow_map, &info);
 
 		let viewport = cvmath::Bounds2!(0, 0, SIZE, SIZE);
 
@@ -427,7 +428,7 @@ impl FxState {
 		g.begin(&shade::BeginArgs::Immediate {
 			color: &[],
 			levels: None,
-			depth: self.render.shadow_map,
+			depth: Some(self.render.shadow_map()),
 			viewport,
 		});
 		g.clear(&shade::ClearArgs {
@@ -471,9 +472,9 @@ fn fade_to(obj: &mut render::Object, target_alpha: f32, fade_spd: f32) {
 
 pub fn draw_entity_order(fx: &FxState, g: &mut shade::Graphics, resx: &Resources, camera: &shade::d3::Camera) {
 	let mut tbuf = shade::d2::TextBuffer::new();
-	tbuf.shader = resx.font.shader;
+	tbuf.shader = Some(&*resx.font.shader);
 	tbuf.blend_mode = shade::BlendMode::Alpha;
-	tbuf.uniform.texture = resx.font.texture;
+	tbuf.uniform.texture = &*resx.font.texture;
 	tbuf.uniform.transform = cvmath::Transform2::ortho(resx.viewport.cast());
 
 	let size = resx.viewport.height() as f32 / 32.0;

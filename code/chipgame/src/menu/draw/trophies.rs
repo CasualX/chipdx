@@ -164,7 +164,7 @@ impl DrawTrophies {
 			steps: DrawTrophyValues::new(steps_high_score, steps_values),
 		}
 	}
-	pub fn draw(&self, buf: &mut shade::d2::TextBuffer, panel: &Bounds2<f32>, resx: &Resources) {
+	pub fn draw<'a>(&self, buf: &mut shade::d2::TextBuffer<'a>, panel: &Bounds2<f32>, resx: &'a Resources) {
 		let size = resx.viewport.height() as f32 * FONT_SIZE;
 
 		let mut scribe = shade::d2::Scribe {

@@ -432,9 +432,9 @@ impl PlayState {
 
 		g.begin(&shade::BeginArgs::Immediate {
 			viewport: resx.viewport,
-			color: &[resx.backcolor],
+			color: &[resx.backcolor()],
 			levels: None,
-			depth: resx.backdepth,
+			depth: Some(resx.backdepth()),
 		});
 		if self.fx.is_some() && !self.menu.stack.is_empty() {
 			menu::darken(g, resx, 168);

@@ -17,12 +17,12 @@ const FRAME_TIME: time::Duration = time::Duration::from_nanos((NANOS_PER_SECOND 
 
 struct AppStuff {
 	size: winit::dpi::PhysicalSize<u32>,
+	resx: chipgame::fx::Resources,
+	g: shade::gl::GlGraphics,
+	context: glutin::context::PossiblyCurrentContext,
+	surface: glutin::surface::Surface<glutin::surface::WindowSurface>,
 	window: winit::window::Window,
 	cursor: winit::window::CursorIcon,
-	surface: glutin::surface::Surface<glutin::surface::WindowSurface>,
-	context: glutin::context::PossiblyCurrentContext,
-	g: shade::gl::GlGraphics,
-	resx: chipgame::fx::Resources,
 }
 
 impl AppStuff {
@@ -106,8 +106,7 @@ impl AppStuff {
 
 		// Now that GL is ready, create graphics and resources
 		let mut g = shade::gl::GlGraphics::new(shade::gl::GlConfig { srgb: true, ..Default::default() });
-		let mut resx = chipgame::fx::Resources::default();
-		resx.load(fs, config, &mut g);
+		let mut resx = chipgame::fx::Resources::load(fs, config, &mut g);
 		resx.backbuffer_viewport.maxs = [size.width as i32, size.height as i32].into();
 		resx.viewport = resx.backbuffer_viewport;
 

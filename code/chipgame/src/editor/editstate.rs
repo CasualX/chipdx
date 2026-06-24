@@ -177,18 +177,18 @@ impl EditorEditState {
 
 		g.begin(&shade::BeginArgs::Immediate {
 			viewport: resx.viewport,
-			color: &[resx.backcolor],
+			color: &[resx.backcolor()],
 			levels: None,
-			depth: resx.backdepth,
+			depth: Some(resx.backdepth()),
 		});
 
 		let p = self.mouse_pos; {
 			let mut cv = shade::im::DrawBuilder::<render::Vertex, render::Uniform>::new();
 			cv.depth_test = Some(shade::Compare::Less);
-			cv.shader = resx.shader;
+			cv.shader = Some(resx.shader.as_ref());
 			cv.uniform.transform = cam.view_proj;
-			cv.uniform.texture = resx.spritesheet_texture;
-			cv.uniform.shadow_map = self.fx.render.shadow_map;
+			cv.uniform.texture = resx.spritesheet_texture.as_ref();
+			cv.uniform.shadow_map = self.fx.render.shadow_map();
 			cv.uniform.light_matrix = self.fx.render.light_matrix;
 
 			for y in 0..TERRAIN_SAMPLES.len() as i32 {
@@ -226,9 +226,9 @@ impl EditorEditState {
 
 		{
 			let mut cv = shade::im::DrawBuilder::<menu::UiVertex, menu::UiUniform>::new();
-			cv.shader = resx.colorshader;
+			cv.shader = Some(resx.colorshader.as_ref());
 			cv.uniform.transform = cvmath::Transform2::ortho(Bounds2::vec(self.screen_size).cast());
-			cv.uniform.texture = resx.spritesheet_texture;
+			cv.uniform.texture = resx.spritesheet_texture.as_ref();
 
 			struct ToVertex {
 				color: [u8; 4],

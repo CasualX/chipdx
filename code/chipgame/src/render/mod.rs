@@ -29,16 +29,16 @@ pub struct TileGfx {
 pub fn drawbg(g: &mut shade::Graphics, resx: &Resources) {
 	g.begin(&shade::BeginArgs::Immediate {
 		viewport: resx.viewport,
-		color: &[resx.backcolor],
+		color: &[resx.backcolor()],
 		levels: None,
-		depth: resx.backdepth,
+		depth: Some(resx.backdepth()),
 	});
 	let mut cv = shade::im::DrawBuilder::<render::Vertex, render::Uniform>::new();
 	cv.depth_test = None;
 	cv.cull_mode = None;
-	cv.shader = resx.shader;
-	cv.uniform.texture = resx.menubg;
-	let info = g.texture2d_get_info(resx.menubg).unwrap();
+	cv.shader = Some(resx.shader.as_ref());
+	cv.uniform.texture = resx.menubg.as_ref();
+	let info = resx.menubg.as_ref().info();
 	let tex_w = info.width as f32;
 	let tex_h = info.height as f32;
 	let vp_w = resx.viewport.width() as f32;

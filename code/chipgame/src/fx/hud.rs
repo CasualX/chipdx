@@ -15,10 +15,10 @@ impl FxState {
 
 		let cv = pool.get::<UiVertex, UiUniform>();
 		cv.blend_mode = shade::BlendMode::Alpha;
-		cv.shader = resx.uishader;
+		cv.shader = Some(resx.uishader.as_ref());
 
 		cv.uniform.transform = Transform2f::ortho(resx.viewport.cast());
-		cv.uniform.texture = resx.menubg;
+		cv.uniform.texture = resx.menubg.as_ref();
 
 		// Draw the backgrounds for various UI elements
 		let paint = shade::d2::Paint {
@@ -55,9 +55,9 @@ impl FxState {
 		// Draw the inventory items
 		let sprites = pool.get::<shade::d2::TexturedVertex, shade::d2::TexturedUniform>();
 		sprites.blend_mode = shade::BlendMode::Alpha;
-		sprites.shader = resx.shader2d_pixelart;
+		sprites.shader = Some(resx.shader2d_pixelart.as_ref());
 		sprites.uniform.transform = Transform2f::ortho(resx.viewport.cast());
-		sprites.uniform.texture = resx.spritesheet_texture;
+		sprites.uniform.texture = resx.spritesheet_texture.as_ref();
 		if game.ps.keys[0] > 0 {
 			draw_sprite(sprites, resx, chipty::SpriteId::BlueKey, Vec2(keys_x1 + a * 0.5, y), a);
 		}
@@ -86,12 +86,12 @@ impl FxState {
 		// Draw the CHIPS and TIME counters
 		{
 			let tbuf = pool.get::<shade::d2::TextVertex, shade::d2::TextUniform>();
-			tbuf.shader = resx.font.shader;
+			tbuf.shader = Some(&*resx.font.shader);
 
 			let transform = Transform2f::ortho(resx.viewport.cast());
 			tbuf.uniform = shade::d2::TextUniform {
 				transform,
-				texture: resx.font.texture,
+				texture: &*resx.font.texture,
 				outline_width_absolute: 0.8,
 				unit_range: Vec2::dup(4.0f32) / Vec2(232.0f32, 232.0f32),
 				..Default::default()
@@ -145,12 +145,12 @@ impl FxState {
 		if self.game.time == 0 {
 			darken = true;
 			let tbuf = pool.get::<shade::d2::TextVertex, shade::d2::TextUniform>();
-			tbuf.shader = resx.font.shader;
+			tbuf.shader = Some(&*resx.font.shader);
 
 			let transform = Transform2f::ortho(resx.viewport.cast());
 			tbuf.uniform = shade::d2::TextUniform {
 				transform,
-				texture: resx.font.texture,
+				texture: &*resx.font.texture,
 				outline_width_absolute: 0.8,
 				unit_range: Vec2::dup(4.0f32) / Vec2(232.0f32, 232.0f32),
 				..Default::default()
@@ -164,15 +164,15 @@ impl FxState {
 				..Default::default()
 			};
 			let level_index = format!("~ Level {} ~", self.level_number);
-			let width = scribe.text_width(&mut {Vec2::ZERO}, &resx.font.font, &level_index);
-			tbuf.text_write(&resx.font, &mut scribe, &mut Vec2((ss.x as f32 - width) * 0.5, ss.y as f32 * 0.75 - size * 1.2), &level_index);
-			let width = scribe.text_width(&mut {Vec2::ZERO}, &resx.font.font, &self.game.field.name);
+			let (width, _) = scribe.measure_text(&resx.font.font, &level_index);
+			tbuf.text_write(&resx.font, &mut scribe, &mut shade::d2::Cursor(Vec2((ss.x as f32 - width) * 0.5, ss.y as f32 * 0.75 - size * 1.2)), &level_index);
+			let (width, _) = scribe.measure_text(&resx.font.font, &self.game.field.name);
 			scribe.color = Vec4(255, 255, 0, 255);
-			tbuf.text_write(&resx.font, &mut scribe, &mut Vec2((ss.x as f32 - width) * 0.5, ss.y as f32 * 0.75), &self.game.field.name);
+			tbuf.text_write(&resx.font, &mut scribe, &mut shade::d2::Cursor(Vec2((ss.x as f32 - width) * 0.5, ss.y as f32 * 0.75)), &self.game.field.name);
 			if let Some(password) = &self.game.field.password {
 				let password = format!("Password: {}", password);
-				let width = scribe.text_width(&mut {Vec2::ZERO}, &resx.font.font, &password);
-				tbuf.text_write(&resx.font, &mut scribe, &mut Vec2((ss.x as f32 - width) * 0.5, ss.y as f32 * 0.75 + size * 1.2), &password);
+				let (width, _) = scribe.measure_text(&resx.font.font, &password);
+				tbuf.text_write(&resx.font, &mut scribe, &mut shade::d2::Cursor(Vec2((ss.x as f32 - width) * 0.5, ss.y as f32 * 0.75 + size * 1.2)), &password);
 			}
 		}
 		else if matches!(self.game.time_state, chipcore::TimeState::Running) && self.game.is_show_hint() {
@@ -180,7 +180,7 @@ impl FxState {
 				darken = true;
 
 				let tbuf = pool.get::<shade::d2::TextVertex, shade::d2::TextUniform>();
-				tbuf.shader = resx.font.shader;
+				tbuf.shader = Some(&*resx.font.shader);
 
 				let rect = resx.viewport.cast();
 				let max_hint_width = rect.size().x * 0.9;
@@ -189,7 +189,7 @@ impl FxState {
 				let transform = Transform2f::ortho(rect);
 				tbuf.uniform = shade::d2::TextUniform {
 					transform,
-					texture: resx.font.texture,
+					texture: &*resx.font.texture,
 					outline_width_absolute: 0.8,
 					unit_range: Vec2::dup(4.0f32) / Vec2(232.0f32, 232.0f32),
 					..Default::default()
@@ -205,7 +205,7 @@ impl FxState {
 
 				// Temporarily adjust font size if hint is too wide
 				// TODO: Implement word-wrapping
-				let hint_width = scribe.text_width(&mut {Vec2::ZERO}, &resx.font.font, &hint);
+				let (hint_width, _) = scribe.measure_text(&resx.font.font, &hint);
 				if hint_width > max_hint_width {
 					// Hint is too wide, use a smaller font size but keep a screen edge margin
 					scribe.font_size = size * max_hint_width / hint_width;

@@ -43,7 +43,7 @@ pub fn darken(g: &mut shade::Graphics, resx: &Resources, alpha: u8) {
 	let mut cv = shade::im::DrawBuilder::<UiVertex, UiUniform>::new();
 
 	cv.blend_mode = shade::BlendMode::Alpha;
-	cv.shader = resx.colorshader;
+	cv.shader = Some(resx.colorshader.as_ref());
 
 	let paint = shade::d2::Paint {
 		template: UiVertex { pos: Vec2::ZERO, uv: Vec2::ZERO, color: [0, 0, 0, alpha] },
@@ -123,11 +123,11 @@ pub fn draw_metrics(g: &mut shade::Graphics, resx: &Resources, metrics: &shade::
 pub fn draw_overlay(g: &mut shade::Graphics, resx: &Resources, align: shade::d2::TextAlign, text: &str) {
 	let mut buf = shade::d2::TextBuffer::new();
 	buf.blend_mode = shade::BlendMode::Alpha;
-	buf.shader = resx.font.shader;
+	buf.shader = Some(&*resx.font.shader);
 
 	let rect = resx.viewport.cast();
 	buf.uniform.transform = cvmath::Transform2f::ortho(rect);
-	buf.uniform.texture = resx.font.texture;
+	buf.uniform.texture = &*resx.font.texture;
 
 	let size = rect.height() * FONT_SIZE * 0.75;
 

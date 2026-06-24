@@ -66,6 +66,9 @@ export function createWasmAPI(canvas, options) {
 		bindInstance(instance) {
 			memory = instance.exports.memory;
 		},
+		decodeUtf8(ptr, len) {
+			return getString(ptr, len);
+		},
 		consoleLog(ptr, len) {
 			console.log(getString(ptr, len));
 		},
@@ -109,6 +112,9 @@ export function createWasmAPI(canvas, options) {
 		disableVertexAttribArray(index) { gl.disableVertexAttribArray(index); },
 		vertexAttribPointer(index, size, type, normalized, stride, offset) {
 			gl.vertexAttribPointer(index, size, type, normalized, stride, offset);
+		},
+		vertexAttribIPointer(index, size, type, stride, offset) {
+			gl.vertexAttribIPointer(index, size, type, stride, offset);
 		},
 		vertexAttribDivisor(index, divisor) { gl.vertexAttribDivisor(index, divisor); },
 		createProgram() { return handles.add(gl.createProgram()); },

@@ -35,25 +35,25 @@ unsafe impl shade::TVertex for Vertex {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Uniform {
+pub struct Uniform<'a> {
 	pub transform: Mat4f,
-	pub texture: shade::Texture2D,
+	pub texture: &'a dyn shade::Texture2D,
 	pub greyscale: f32,
 
-	pub shadow_map: shade::Texture2D,
+	pub shadow_map: &'a dyn shade::Texture2D,
 	pub light_matrix: Mat4f,
 	pub shadow_bias: f32,
 	pub shadow_tint: Vec3f,
 }
 
-impl Default for Uniform {
-	fn default() -> Uniform {
+impl Default for Uniform<'_> {
+	fn default() -> Self {
 		Uniform {
 			transform: Mat4::IDENTITY,
-			texture: shade::Texture2D::INVALID,
+			texture: &shade::DefaultTexture2D,
 			greyscale: 0.0,
 
-			shadow_map: shade::Texture2D::INVALID,
+			shadow_map: &shade::DefaultTexture2D,
 			light_matrix: Mat4::IDENTITY,
 			shadow_bias: 0.002,
 			shadow_tint: Vec3(0.75, 0.80, 0.90),
@@ -61,12 +61,12 @@ impl Default for Uniform {
 	}
 }
 
-impl shade::UniformVisitor for Uniform {
+impl shade::UniformVisitor for Uniform<'_> {
 	fn visit(&self, set: &mut dyn shade::UniformSetter) {
 		set.value("u_transform", &self.transform);
-		set.value("u_tex", &self.texture);
+		set.value("u_tex", self.texture);
 		set.value("u_greyscale", &self.greyscale);
-		set.value("u_shadow_map", &self.shadow_map);
+		set.value("u_shadow_map", self.shadow_map);
 		set.value("u_light_matrix", &self.light_matrix);
 		set.value("u_shadow_bias", &self.shadow_bias);
 		set.value("u_shadow_tint", &self.shadow_tint);
