@@ -73,7 +73,7 @@ impl LevelSetMenu {
 		let [top, bottom, _] = draw::flexv(rect, None, layout::Justify::Center, &[layout::Unit::Fr(1.0), layout::Unit::Fr(3.0), layout::Unit::Fr(1.0)]);
 
 		{
-			let size = resx.viewport.height() as f32 * FONT_SIZE;
+			let size = resx.font_size();
 
 			let scribe = shade::d2::Scribe {
 				font_size: size,

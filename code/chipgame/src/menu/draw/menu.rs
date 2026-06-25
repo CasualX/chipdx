@@ -7,7 +7,7 @@ pub struct DrawMenuItems<'a> {
 
 impl<'a> DrawMenuItems<'a> {
 	pub fn draw<'r>(&self, buf: &mut shade::d2::TextBuffer<'r>, rect: &Bounds2<f32>, resx: &'r Resources) {
-		let size = resx.viewport.height() as f32 * FONT_SIZE;
+		let size = resx.font_size();
 
 		let mut scribe = shade::d2::Scribe {
 			font_size: size,

@@ -20,7 +20,7 @@ impl AboutMenu {
 		buf.uniform.transform = Transform2f::ortho(rect);
 		buf.uniform.texture = &*resx.font.texture;
 
-		let size = rect.height() * FONT_SIZE * 0.75;
+		let size = resx.font_size() * 0.75;
 
 		let scribe = shade::d2::Scribe {
 			font_size: size,

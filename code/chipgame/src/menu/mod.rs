@@ -37,7 +37,7 @@ pub use self::about::*;
 pub use self::scout::*;
 pub use self::geometry::*;
 
-const FONT_SIZE: f32 = 1.0 / 20.0;
+pub(crate) const FONT_SIZE: f32 = 1.0 / 20.0;
 
 pub fn darken(g: &mut shade::Graphics, resx: &Resources, alpha: u8) {
 	let mut cv = shade::im::DrawBuilder::<UiVertex, UiUniform>::new();
@@ -129,7 +129,7 @@ pub fn draw_overlay(g: &mut shade::Graphics, resx: &Resources, align: shade::d2:
 	buf.uniform.transform = cvmath::Transform2f::ortho(rect);
 	buf.uniform.texture = &*resx.font.texture;
 
-	let size = rect.height() * FONT_SIZE * 0.75;
+	let size = resx.font_size() * 0.75;
 
 	let scribe = shade::d2::Scribe {
 		font_size: size,

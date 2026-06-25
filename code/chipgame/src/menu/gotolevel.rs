@@ -108,7 +108,7 @@ impl GoToLevel {
 		buf.uniform.transform = Transform2f::ortho(rect);
 		buf.uniform.texture = &*resx.font.texture;
 
-		let size = resx.viewport.height() as f32 * FONT_SIZE;
+		let size = resx.font_size();
 
 		let [top, bottom] = draw::flexv(rect, None, layout::Justify::Center, &[layout::Unit::Fr(1.0), layout::Unit::Fr(4.0)]);
 		let [_, panel, _] = draw::flexh(bottom, None, layout::Justify::Center, &[layout::Unit::Fr(8.0), layout::Unit::Abs(size * 10.0), layout::Unit::Fr(1.0)]);

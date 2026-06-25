@@ -95,6 +95,10 @@ impl Resources {
 		&**self.backdepth.as_ref().expect("back depth texture has not been created")
 	}
 
+	pub fn font_size(&self) -> f32 {
+		self.viewport.width().min(self.viewport.height()) as f32 * crate::menu::FONT_SIZE
+	}
+
 	pub fn load(fs: &crate::FileSystem, config: &crate::config::Config, g: &mut shade::Graphics) -> Resources {
 		let mut shaders = HashMap::<String, Box<dyn shade::ShaderProgram>>::new();
 		for (name, shader) in &config.shaders {

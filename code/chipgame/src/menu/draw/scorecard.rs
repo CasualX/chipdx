@@ -10,7 +10,7 @@ pub struct DrawScoreCard {
 }
 impl DrawScoreCard {
 	pub fn draw<'a>(&self, buf: &mut shade::d2::TextBuffer<'a>, rect: &Bounds2<f32>, resx: &'a Resources) {
-		let size = resx.viewport.height() as f32 * FONT_SIZE;
+		let size = resx.font_size();
 
 		let mut scribe = shade::d2::Scribe {
 			font_size: size,

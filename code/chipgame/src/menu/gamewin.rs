@@ -126,7 +126,7 @@ impl GameWinMenu {
 
 		buf.draw(g);
 
-		let size = resx.viewport.height() as f32 * FONT_SIZE;
+		let size = resx.font_size();
 		if self.time_high_score < 0 || self.time < self.time_high_score {
 			let mins = Vec2f(middle.right() - size * 3.0, middle.center().y - size);
 			let maxs = Vec2f(middle.right(), middle.center().y);

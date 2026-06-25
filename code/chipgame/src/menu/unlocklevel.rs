@@ -109,7 +109,7 @@ impl UnlockLevelMenu {
 		buf.uniform.transform = Transform2f::ortho(rect);
 		buf.uniform.texture = &*resx.font.texture;
 
-		let size = resx.viewport.height() as f32 * FONT_SIZE;
+		let size = resx.font_size();
 
 		let scribe = shade::d2::Scribe {
 			font_size: size,

@@ -3,8 +3,8 @@ use super::*;
 #[derive(Clone)]
 pub struct CameraShake {
 	offset: Vec3f,
-	time: f64,
-	duration: f64,
+	time: f32,
+	duration: f32,
 	magnitude: f32,
 }
 
@@ -24,7 +24,7 @@ impl CameraShake {
 		self.offset
 	}
 
-	pub fn add(&mut self, magnitude: f32, duration: f64) {
+	pub fn add(&mut self, magnitude: f32, duration: f32) {
 		if magnitude <= 0.0 || duration <= 0.0 {
 			return;
 		}
@@ -39,7 +39,7 @@ impl CameraShake {
 			return;
 		}
 
-		self.time = f64::max(0.0, self.time - dt);
+		self.time = f32::max(0.0, self.time - dt as f32);
 		let envelope = (self.time / self.duration) as f32;
 		let magnitude = self.magnitude * envelope * envelope;
 		if magnitude <= 0.0 {
