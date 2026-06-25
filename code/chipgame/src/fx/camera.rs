@@ -31,6 +31,7 @@ pub struct PlayCamera {
 	// Blend between orthographic and perspective projection
 	blend: f32,
 	perspective: bool,
+	zoom_mode: chipty::ZoomMode,
 
 	pub master: chipcore::EntityHandle,
 	pub move_src: Vec2<i32>,
@@ -51,6 +52,7 @@ impl Default for PlayCamera {
 			position: Vec3f::ONE,
 			blend: 0.0,
 			perspective: false,
+			zoom_mode: chipty::ZoomMode::Wide,
 			master: chipcore::EntityHandle::INVALID,
 			move_src: Vec2::ZERO,
 			move_dest: Vec2::ZERO,
@@ -101,6 +103,7 @@ impl PlayCamera {
 	}
 
 	pub fn set_zoom_mode(&mut self, zoom_mode: chipty::ZoomMode, animate: bool) {
+		self.zoom_mode = zoom_mode;
 		self.offset_target = match zoom_mode {
 			chipty::ZoomMode::Wide => WIDE_OFFSET,
 			chipty::ZoomMode::Classic => CLASSIC_OFFSET,
@@ -118,6 +121,22 @@ impl PlayCamera {
 
 	pub fn set_target(&mut self, pos: Vec3f) {
 		self.target = pos;
+	}
+
+	pub fn vision_clip(&self) -> Option<(Vec2f, f32)> {
+		let half_extent = match self.zoom_mode {
+			chipty::ZoomMode::Classic | chipty::ZoomMode::Wide => {
+				fn zoom_lerp_t(offset_z: f32) -> f32 {
+					((offset_z - CLASSIC_OFFSET_Z) / (WIDE_OFFSET_Z - CLASSIC_OFFSET_Z)).clamp(0.0, 1.0)
+				}
+				let t = zoom_lerp_t(self.get_offset().z);
+				let classic = TILE_SIZE * CLASSIC_VISION_TILES;
+				let wide = TILE_SIZE * WIDE_VISION_TILES;
+				cvmath::lerp(classic, wide, t)
+			}
+			chipty::ZoomMode::Editor => return None,
+		};
+		Some((self.target.xy(), half_extent))
 	}
 
 	pub fn add_shake_at(&mut self, pos: Vec3f, strength: f32, falloff: f32) {

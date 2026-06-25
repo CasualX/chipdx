@@ -21,6 +21,11 @@ uniform sampler2D u_shadow_map;
 uniform mat4 u_light_matrix;
 uniform float u_shadow_bias;
 uniform vec3 u_shadow_tint;
+uniform vec2 u_vision_center;
+uniform float u_vision_half_extent;
+
+const float VISION_FADE_WIDTH = 16.0;
+const vec3 VISION_FADE_COLOR = vec3(0.0, 6.0 / 255.0, 0.0);
 
 vec3 srgbToLinear(vec3 c) {
 	return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c));
@@ -60,6 +65,14 @@ void main() {
 	if (color.a < 0.2) {
 		discard;
 	}
+	vec2 delta = abs(v_worldpos.xy - u_vision_center);
+	if (delta.x > u_vision_half_extent || delta.y > u_vision_half_extent) {
+		discard;
+	}
+	vec2 edge_dist = u_vision_half_extent - delta;
+	vec2 edge_t = clamp(edge_dist / VISION_FADE_WIDTH, 0.0, 1.0);
+	vec2 edge_fade_axis = 1.0 - pow(1.0 - edge_t, vec2(3.0));
+	float edge_fade = edge_fade_axis.x * edge_fade_axis.y;
 
 	color = clamp(v_color * color, 0.0, 1.0);
 
@@ -71,6 +84,7 @@ void main() {
 	vec2 light_uv = light_ndc.xy * 0.5 + 0.5;
 
 	if (light_uv.x < 0.0 || light_uv.x > 1.0 || light_uv.y < 0.0 || light_uv.y > 1.0) {
+		color.rgb = mix(VISION_FADE_COLOR, color.rgb, edge_fade);
 		FragColor = color;
 		return;
 	}
@@ -91,6 +105,7 @@ void main() {
 	vec3 lit = color.rgb;
 	vec3 shaded = color.rgb * u_shadow_tint;
 	color.rgb = mix(shaded, lit, shadow);
+	color.rgb = mix(VISION_FADE_COLOR, color.rgb, edge_fade);
 
 	FragColor = color;
 }

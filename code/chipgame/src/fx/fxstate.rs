@@ -248,7 +248,8 @@ impl FxState {
 
 		self.draw_shadow_map(g, resx);
 		let camera = self.camera.setup(resx.viewport.size());
-		self.render.draw(g, resx, &camera, time);
+		let vision_clip = self.camera.vision_clip();
+		self.render.draw(g, resx, &camera, time, vision_clip);
 
 		if self.hud_enabled {
 			g.begin(&shade::BeginArgs::Immediate {
@@ -435,7 +436,8 @@ impl FxState {
 			depth: Some(1.0),
 			..Default::default()
 		});
-		self.render.draw_field(g, resx, &camera, self.time, true);
+		let vision_clip = self.camera.vision_clip();
+		self.render.draw_field(g, resx, &camera, self.time, true, vision_clip);
 		g.end();
 	}
 }

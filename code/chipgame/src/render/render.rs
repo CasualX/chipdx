@@ -39,6 +39,8 @@ pub struct Uniform<'a> {
 	pub transform: Mat4f,
 	pub texture: &'a dyn shade::Texture2D,
 	pub greyscale: f32,
+	pub vision_center: Vec2f,
+	pub vision_half_extent: f32,
 
 	pub shadow_map: &'a dyn shade::Texture2D,
 	pub light_matrix: Mat4f,
@@ -52,6 +54,8 @@ impl Default for Uniform<'_> {
 			transform: Mat4::IDENTITY,
 			texture: &shade::DefaultTexture2D,
 			greyscale: 0.0,
+			vision_center: Vec2::ZERO,
+			vision_half_extent: 1.0e9,
 
 			shadow_map: &shade::DefaultTexture2D,
 			light_matrix: Mat4::IDENTITY,
@@ -66,6 +70,8 @@ impl shade::UniformVisitor for Uniform<'_> {
 		set.value("u_transform", &self.transform);
 		set.value("u_tex", self.texture);
 		set.value("u_greyscale", &self.greyscale);
+		set.value("u_vision_center", &self.vision_center);
+		set.value("u_vision_half_extent", &self.vision_half_extent);
 		set.value("u_shadow_map", self.shadow_map);
 		set.value("u_light_matrix", &self.light_matrix);
 		set.value("u_shadow_bias", &self.shadow_bias);

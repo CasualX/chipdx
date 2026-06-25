@@ -71,7 +71,7 @@ impl RenderState {
 		self.objects.retain(|_, obj| obj.update(ctx));
 		self.effects.retain(|efx| ctx.time < efx.start + 1.0);
 	}
-	pub fn draw(&self, g: &mut shade::Graphics, resx: &Resources, camera: &shade::d3::Camera, time: f64) {
+	pub fn draw(&self, g: &mut shade::Graphics, resx: &Resources, camera: &shade::d3::Camera, time: f64, vision_clip: Option<(Vec2f, f32)>) {
 		g.begin(&shade::BeginArgs::Immediate {
 			viewport: resx.viewport,
 			color: &[resx.backcolor()],
@@ -79,12 +79,12 @@ impl RenderState {
 			depth: Some(resx.backdepth()),
 		});
 
-		self.draw_field(g, resx, camera, time, false);
-		self.draw_effects(g, resx, camera, time);
+		self.draw_field(g, resx, camera, time, false, vision_clip);
+		self.draw_effects(g, resx, camera, time, vision_clip);
 
 		g.end();
 	}
-	pub fn draw_field(&self, g: &mut shade::Graphics, resx: &Resources, camera: &shade::d3::Camera, time: f64, shadow: bool) {
+	pub fn draw_field(&self, g: &mut shade::Graphics, resx: &Resources, camera: &shade::d3::Camera, time: f64, shadow: bool, vision_clip: Option<(Vec2f, f32)>) {
 		let mut cv = shade::im::DrawBuilder::<render::Vertex, render::Uniform>::new();
 		cv.depth_test = Some(shade::Compare::LessEqual);
 		cv.cull_mode = Some(shade::CullMode::CW);
@@ -93,18 +93,27 @@ impl RenderState {
 		cv.uniform.texture = resx.spritesheet_texture.as_ref();
 		cv.uniform.shadow_map = self.shadow_map();
 		cv.uniform.light_matrix = self.light_matrix;
+		if !shadow {
+			if let Some((center, half_extent)) = vision_clip {
+				cv.uniform.vision_center = center;
+				cv.uniform.vision_half_extent = half_extent;
+			}
+		}
 		render::field(&mut cv, camera, self, resx, time);
 		cv.draw(g);
 	}
-	pub fn draw_effects(&self, g: &mut shade::Graphics, resx: &Resources, camera: &shade::d3::Camera, time: f64) {
+	pub fn draw_effects(&self, g: &mut shade::Graphics, resx: &Resources, camera: &shade::d3::Camera, time: f64, vision_clip: Option<(Vec2f, f32)>) {
 		let mut cv = shade::im::DrawBuilder::<Vertex, Uniform>::new();
-		cv.blend_mode = shade::BlendMode::Solid;
 		cv.depth_test = Some(shade::Compare::Always);
 		// cv.cull_mode = Some(shade::CullMode::CW);
 
 		cv.shader = Some(resx.shader.as_ref());
 		cv.uniform.transform = camera.view_proj;
 		cv.uniform.texture = resx.effects.as_ref();
+		if let Some((center, half_extent)) = vision_clip {
+			cv.uniform.vision_center = center;
+			cv.uniform.vision_half_extent = half_extent;
+		}
 
 		for efx in &self.effects {
 			efx.draw(&mut cv, time);
