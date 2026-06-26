@@ -43,9 +43,11 @@ window.chipGame = function chipGame() {
 		},
 		padDir: null,
 		gameActive: false,
+		pageActive: true,
 		pressedKeys: new Set(),
 		padTouchId: null,
 		audioCtx: null,
+		audioMasterGain: null,
 		audioLoaded: false,
 		soundBank: new Map(),
 		musicBank: new Map(),
@@ -62,36 +64,55 @@ window.chipGame = function chipGame() {
 			if (this.initialized) return;
 			this.initialized = true;
 			this.loadPrefs();
+			this.initWatchers();
 			this.syncViewportLayout();
 			this.hasTouchSupport = this.detectTouchSupport();
 			this.syncControlSchemeFromEnvironment();
-			this.boundWindowError = (event) => this.handleWindowError(event);
-			this.boundUnhandledRejection = (event) => this.handleUnhandledRejection(event);
-			this.boundKeyDown = (event) => this.handleKeyDown(event);
-			this.boundKeyUp = (event) => this.handleKeyUp(event);
-			this.boundGamepadConnected = () => this.handleGamepadChange();
-			this.boundGamepadDisconnected = () => this.handleGamepadChange();
-			this.boundResize = () => this.syncViewportLayout();
-			this.boundFullscreenChange = () => this.updateDisplayModeCta();
-			this.boundOrientationChange = () => this.syncViewportLayout();
-
-			window.addEventListener("error", this.boundWindowError);
-			window.addEventListener("unhandledrejection", this.boundUnhandledRejection);
-			window.addEventListener("keydown", this.boundKeyDown);
-			window.addEventListener("keyup", this.boundKeyUp);
-			window.addEventListener("gamepadconnected", this.boundGamepadConnected);
-			window.addEventListener("gamepaddisconnected", this.boundGamepadDisconnected);
-			window.addEventListener("resize", this.boundResize);
-			document.addEventListener("fullscreenchange", this.boundFullscreenChange);
+			let self = this;
+			window.addEventListener("error", (event) => self.handleWindowError(event));
+			window.addEventListener("unhandledrejection", (event) => self.handleUnhandledRejection(event));
+			window.addEventListener("keydown", (event) => self.handleKeyDown(event));
+			window.addEventListener("keyup", (event) => self.handleKeyUp(event));
+			window.addEventListener("focus", () => self.syncPageActivity());
+			window.addEventListener("blur", () => self.syncPageActivity());
+			window.addEventListener("gamepadconnected", () => self.handleGamepadChange());
+			window.addEventListener("gamepaddisconnected", () => self.handleGamepadChange());
+			window.addEventListener("resize", () => self.syncViewportLayout());
+			document.addEventListener("fullscreenchange", () => self.updateDisplayModeCta());
+			document.addEventListener("visibilitychange", () => self.syncPageActivity());
 			if (screen && screen.orientation && screen.orientation.addEventListener) {
-				screen.orientation.addEventListener("change", this.boundOrientationChange);
+				screen.orientation.addEventListener("change", () => self.syncViewportLayout());
 			}
 
 			this.updateDisplayModeCta();
+			this.syncPageActivity();
 			this.load().catch((err) => {
 				console.error(err);
 				this.setLoadingStatus(String(err && err.message ? err.message : err));
 			});
+		},
+
+		initWatchers() {
+			this.$watch("pageActive", (active, wasActive) => {
+				this.syncAudioVisibility();
+				if (wasActive && !active) {
+					this.clearAllInputs();
+				}
+			});
+			this.$watch("gameActive", () => {
+				this.syncTouchControls();
+				this.queueLoadingPanelScaleSync();
+			});
+			this.$watch("selectedControlScheme", () => {
+				this.syncTouchControls();
+				this.queueLoadingPanelScaleSync();
+			});
+			this.$watch("isLandscapeLayout", () => {
+				this.updateDisplayModeCta();
+				this.queueLoadingPanelScaleSync();
+			});
+			this.$watch("loadingProgress", () => this.queueLoadingPanelScaleSync());
+			this.$watch("loadingStatus", () => this.queueLoadingPanelScaleSync());
 		},
 
 		get overlayStatusText() {
@@ -111,7 +132,6 @@ window.chipGame = function chipGame() {
 			if (typeof progress === "number") {
 				this.loadingProgress = Math.max(0, Math.min(1, progress));
 			}
-			this.queueLoadingPanelScaleSync();
 		},
 
 		loadPrefs() {
@@ -162,14 +182,11 @@ window.chipGame = function chipGame() {
 			if (!this.userSelectedControlScheme) {
 				this.selectedControlScheme = this.detectedControlScheme;
 			}
-			this.syncTouchControls();
 		},
 
 		selectControlScheme(scheme) {
 			this.userSelectedControlScheme = true;
 			this.selectedControlScheme = scheme;
-			this.syncTouchControls();
-			this.queueLoadingPanelScaleSync();
 		},
 
 		getCustomLevelPayload() {
@@ -191,8 +208,6 @@ window.chipGame = function chipGame() {
 
 		syncViewportLayout() {
 			this.isLandscapeLayout = this.isLandscapeViewport();
-			this.updateDisplayModeCta();
-			this.queueLoadingPanelScaleSync();
 		},
 
 		queueLoadingPanelScaleSync() {
@@ -233,18 +248,18 @@ window.chipGame = function chipGame() {
 		},
 
 		handleWindowError(event) {
-			console.error("window.error", event.error || event.message || event);
-			this.setLoadingStatus(String(event.error?.message || event.message || event));
+			console.error("window.error", event.error ?? event.message ?? event);
+			this.setLoadingStatus(String(event.error?.message ?? event.message ?? event));
 		},
 
 		handleUnhandledRejection(event) {
 			console.error("unhandledrejection", event.reason);
-			this.setLoadingStatus(String(event.reason?.message || event.reason || event));
+			this.setLoadingStatus(String(event.reason?.message ?? event.reason ?? event));
 		},
 
 		resizeCanvasToDisplaySize() {
 			const canvas = this.$refs.canvas;
-			const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+			const dpr = Math.max(1, Math.min(3, window.devicePixelRatio ?? 1));
 			const rect = canvas.getBoundingClientRect();
 			const width = Math.max(1, Math.floor(rect.width * dpr));
 			const height = Math.max(1, Math.floor(rect.height * dpr));
@@ -257,10 +272,23 @@ window.chipGame = function chipGame() {
 
 		ensureAudioContext() {
 			if (this.audioCtx) return this.audioCtx;
-			const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+			const AudioContextCtor = window.AudioContext ?? window.webkitAudioContext;
 			if (!AudioContextCtor) return null;
 			this.audioCtx = new AudioContextCtor();
+			this.audioMasterGain = this.audioCtx.createGain();
+			this.audioMasterGain.connect(this.audioCtx.destination);
+			this.syncAudioVisibility();
 			return this.audioCtx;
+		},
+
+		syncAudioVisibility() {
+			if (!this.audioMasterGain) return;
+			this.audioMasterGain.gain.value = this.pageActive ? 1.0 : 0.0;
+		},
+
+		syncPageActivity() {
+			const hasFocus = typeof document.hasFocus === "function" ? document.hasFocus() : true;
+			this.pageActive = document.visibilityState === "visible" && hasFocus;
 		},
 
 		async enableAudio() {
@@ -314,6 +342,8 @@ window.chipGame = function chipGame() {
 		},
 
 		getButtonsBitmask() {
+			if (!this.pageActive) return 0;
+
 			let buttons = 0;
 			if (this.pressedKeys.has("ArrowUp") || this.pressedKeys.has("KeyW")) buttons |= INPUT_UP;
 			if (this.pressedKeys.has("ArrowLeft") || this.pressedKeys.has("KeyA")) buttons |= INPUT_LEFT;
@@ -344,8 +374,8 @@ window.chipGame = function chipGame() {
 
 			for (const gamepad of pads) {
 				if (!gamepad || !gamepad.connected) continue;
-				const gamepadButtons = gamepad.buttons || [];
-				const axes = gamepad.axes || [];
+				const gamepadButtons = gamepad.buttons ?? [];
+				const axes = gamepad.axes ?? [];
 
 				if (gamepadButtons[12]?.pressed) buttons |= INPUT_UP;
 				if (gamepadButtons[13]?.pressed) buttons |= INPUT_DOWN;
@@ -382,6 +412,11 @@ window.chipGame = function chipGame() {
 			}
 			this.padTouchId = null;
 			this.padDir = null;
+		},
+
+		clearAllInputs() {
+			this.pressedKeys.clear();
+			this.clearTouchInputs();
 		},
 
 		requestFullscreenOnTouch() {
@@ -467,7 +502,6 @@ window.chipGame = function chipGame() {
 				await this.enableAudio();
 			}
 			this.gameActive = true;
-			this.syncTouchControls();
 		},
 
 		onPadTouchStart(event) {
@@ -596,7 +630,7 @@ window.chipGame = function chipGame() {
 				ctx.decodeAudioData(copy.buffer).then((buffer) => {
 					const gain = ctx.createGain();
 					gain.gain.value = 1.0;
-					gain.connect(ctx.destination);
+					gain.connect(this.audioMasterGain ?? ctx.destination);
 					this.soundBank.set(sound_id | 0, { buffer, gain });
 				}).catch((err) => {
 					console.warn("decodeAudioData failed", sound_id, err);
@@ -612,7 +646,7 @@ window.chipGame = function chipGame() {
 					const id = music_id | 0;
 					const gain = ctx.createGain();
 					gain.gain.value = 0.375;
-					gain.connect(ctx.destination);
+					gain.connect(this.audioMasterGain ?? ctx.destination);
 					this.musicBank.set(id, { buffer, gain });
 					if (this.requestedMusicKey === id && (!this.musicSource || this.currentMusicKey !== id)) {
 						playMusic(id);
@@ -766,6 +800,14 @@ window.chipGame = function chipGame() {
 			let lastHud = performance.now();
 
 			const frame = (now) => {
+				if (!this.pageActive) {
+					last = now;
+					acc = 0;
+					this.resizeCanvasToDisplaySize();
+					this.frameHandle = requestAnimationFrame(frame);
+					return;
+				}
+
 				const dt = Math.min(250, now - last);
 				last = now;
 				acc += dt;
@@ -774,13 +816,13 @@ window.chipGame = function chipGame() {
 					this.syncControlSchemeFromEnvironment();
 				}
 
-				const buttons = this.getButtonsBitmask();
 				if (!this.gameActive) {
 					this.resizeCanvasToDisplaySize();
 					this.frameHandle = requestAnimationFrame(frame);
 					return;
 				}
 
+				const buttons = this.getButtonsBitmask();
 				while (acc >= stepMs) {
 					try {
 						exports.thinkInstance(gamePtr, buttons);
