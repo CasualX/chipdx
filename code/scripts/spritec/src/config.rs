@@ -19,7 +19,7 @@ impl Into<shade::image::BlitGutterMode<[u8; 4]>> for GutterMode {
 pub struct Sprite {
 	pub name: String,
 	pub frames: Vec<String>,
-	pub transform: chipty::SpriteTransform,
+	pub transform: shade::atlas::Transform,
 	pub gutter: GutterMode,
 }
 
@@ -42,7 +42,7 @@ fn load_sprites(root: &path::Path) -> Vec<Sprite> {
 	let mut sections: Vec<Sprite> = Vec::new();
 	let mut current_name: Option<String> = None;
 	let mut current_frames: Vec<String> = Vec::new();
-	let mut current_transform = chipty::SpriteTransform::None;
+	let mut current_transform = shade::atlas::Transform::None;
 	let mut current_gutter = GutterMode::ClampToEdge;
 
 	for item in ini_core::Parser::new(&config_text) {
@@ -55,7 +55,7 @@ fn load_sprites(root: &path::Path) -> Vec<Sprite> {
 					sections.push(Sprite { name: prev_name, frames: current_frames, transform: current_transform, gutter: current_gutter });
 				}
 				current_name = Some(name.to_string());
-				current_transform = chipty::SpriteTransform::None;
+				current_transform = shade::atlas::Transform::None;
 				current_frames = Vec::new();
 			}
 			ini_core::Item::Property(key, Some(value)) => {
@@ -64,13 +64,13 @@ fn load_sprites(root: &path::Path) -> Vec<Sprite> {
 				}
 				else if key == "Transform" {
 					current_transform = match value {
-						"None" => chipty::SpriteTransform::None,
-						"FlipX" => chipty::SpriteTransform::FlipX,
-						"FlipY" => chipty::SpriteTransform::FlipY,
-						"FlipXY" => chipty::SpriteTransform::FlipXY,
-						"Rotate90" => chipty::SpriteTransform::Rotate90,
-						"Rotate180" => chipty::SpriteTransform::Rotate180,
-						"Rotate270" => chipty::SpriteTransform::Rotate270,
+						"None" => shade::atlas::Transform::None,
+						"FlipX" => shade::atlas::Transform::FlipX,
+						"FlipY" => shade::atlas::Transform::FlipY,
+						"FlipXY" => shade::atlas::Transform::Rotate180,
+						"Rotate90" => shade::atlas::Transform::Rotate90,
+						"Rotate180" => shade::atlas::Transform::Rotate180,
+						"Rotate270" => shade::atlas::Transform::Rotate270,
 						_ => panic!("unknown Transform value: {}", value),
 					};
 				}

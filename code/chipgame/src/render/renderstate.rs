@@ -90,7 +90,7 @@ impl RenderState {
 		cv.cull_mode = Some(shade::CullMode::CW);
 		cv.shader = Some(if shadow { resx.shader_shadowmap.as_ref() } else { resx.shader.as_ref() });
 		cv.uniform.transform = camera.view_proj;
-		cv.uniform.texture = resx.spritesheet_texture.as_ref();
+		cv.uniform.texture = resx.sprites_texture.as_ref();
 		cv.uniform.shadow_map = self.shadow_map();
 		cv.uniform.light_matrix = self.light_matrix;
 		if !shadow {

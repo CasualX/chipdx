@@ -1,5 +1,5 @@
 use std::cmp::Reverse;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::{fs, io, path};
 
 use cvmath::*;
@@ -15,7 +15,7 @@ struct FrameAsset {
 	gutter: config::GutterMode,
 }
 
-const SPRITE_FRAME_TIME: f32 = 0.0; // FIXME: set proper frame time
+const SPRITE_FRAME_TIME: f32 = 1.0 / 16.0;
 
 const GUTTER: i32 = 1;
 
@@ -70,39 +70,43 @@ fn main() {
 		packed_frames += 1;
 	}
 
-	let mut frames_meta: Vec<chipty::SpriteFrame> = Vec::new();
-	let mut sprite_entries: BTreeMap<String, chipty::SpriteEntry> = BTreeMap::new();
+	let mut atlas_sprites = HashMap::new();
 	for sprite in &sprite_config {
-		let sprite_start = frames_meta.len();
+		let mut frames = Vec::with_capacity(sprite.frames.len());
 		for path in &sprite.frames {
 			let rect = frame_lookup.get(path)
 				.unwrap_or_else(|| panic!("frame {} missing from packed sheet", path));
-			frames_meta.push(chipty::SpriteFrame {
-				rect: *rect,
+			let frame = shade::atlas::Frame {
+				rect: shade::atlas::Rect(rect[0], rect[1], rect[2], rect[3]),
+				margin: GUTTER,
 				transform: sprite.transform,
 				origin: sprite_origin(path),
-				duration: SPRITE_FRAME_TIME,
-			});
+			};
+			frames.push(shade::atlas::AnimatedFrame { frame, duration: SPRITE_FRAME_TIME });
 		}
-		let sprite_len = frames_meta.len() - sprite_start;
-		let entry = chipty::SpriteEntry {
-			index: sprite_start.try_into().expect("frame index fits in u16"),
-			len: sprite_len.try_into().expect("frame count fits in u16"),
-			duration: SPRITE_FRAME_TIME * sprite_len as f32,
+		let sprite_entry = match frames.as_slice() {
+			[frame] => shade::atlas::Sprite::Frame(frame.frame.clone()),
+			_ => shade::atlas::Sprite::Animated(frames),
 		};
-		sprite_entries.insert(sprite.name.clone(), entry);
+		atlas_sprites.insert(sprite.name.clone(), sprite_entry);
 	}
 
 	sheet.recover_alpha_colors();
 	sheet.save_file_png(path::Path::new("data/spritesheet.png")).expect("save spritesheet png");
-	let emitted_frames = frames_meta.len();
-	let sheet_meta = chipty::SpriteSheet {
-		width: sheet_width,
-		height: sheet_height,
-		sprites: sprite_entries,
-		frames: frames_meta,
+	let emitted_frames: usize = atlas_sprites.values().map(shade::atlas::Sprite::len).sum();
+	let atlas = shade::atlas::Atlas {
+		version: 0,
+		meta: shade::atlas::Metadata {
+			width: sheet_width,
+			height: sheet_height,
+			kind: shade::atlas::Kind::Bitmap,
+			distance_range: 0.0,
+			distance_range_middle: 0.0,
+		},
+		sprites: atlas_sprites,
+		fonts: HashMap::new(),
 	};
-	save_metadata(&sheet_meta, path::Path::new("data/spritesheet.json"));
+	save_metadata(&atlas, path::Path::new("data/spritesheet.json"));
 	println!(
 		"Packed {} unique images, emitted {} sprite frames across {} sprites",
 		packed_frames,
@@ -150,7 +154,7 @@ fn sprite_origin(file_name: &str) -> Vec2<i32> {
 	Vec2::new(0, 0)
 }
 
-fn save_metadata(sheet: &chipty::SpriteSheet<String>, path: &path::Path) {
+fn save_metadata(sheet: &shade::atlas::Atlas, path: &path::Path) {
 	let file = fs::File::create(path).expect("create spritesheet metadata json");
 	let writer = io::BufWriter::new(file);
 	serde_json::to_writer(writer, sheet).expect("serialize spritesheet metadata");

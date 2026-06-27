@@ -75,57 +75,26 @@ struct SpriteUV {
 	origin: Vec2f,
 }
 
-fn sprite_uv(sheet: &chipty::SpriteSheet<chipty::SpriteId>, sprite: chipty::SpriteId, frame: u16) -> SpriteUV {
-	let Some(entry) = sheet.sprites.get(&sprite) else {
-		panic!("sprite {:?} not found in sheet", sprite);
-	};
-	let index = entry.index as usize + if entry.len == 0 {
-		panic!("sprite entry has zero frames");
-	}
-	else if entry.len == 1 {
-		0
-	}
-	else {
-		(frame as usize) % (entry.len as usize)
-	};
-
-	let frame = &sheet.frames[index];
-	let [x, y, width, height] = frame.rect;
-
-	let ax = x as f32;
-	let ay = y as f32;
-	let bx = (x + width) as f32;
-	let cy = (y + height) as f32;
-
-	let a = Vec2f::new(ax, ay);
-	let b = Vec2f::new(bx, ay);
-	let c = Vec2f::new(ax, cy);
-	let d = Vec2f::new(bx, cy);
-
-	let (top_left, top_right, bottom_left, bottom_right) = match frame.transform {
-		chipty::SpriteTransform::None => (a, b, c, d),
-		chipty::SpriteTransform::FlipX => (b, a, d, c),
-		chipty::SpriteTransform::FlipY => (c, d, a, b),
-		chipty::SpriteTransform::FlipXY => (d, c, b, a),
-		chipty::SpriteTransform::Rotate90 => (c, a, d, b),
-		chipty::SpriteTransform::Rotate180 => (d, c, b, a),
-		chipty::SpriteTransform::Rotate270 => (b, d, a, c),
-	};
-
-	SpriteUV {
-		top_left,
-		top_right,
-		bottom_left,
-		bottom_right,
-		width: frame.rect[2] as f32,
-		height: frame.rect[3] as f32,
-		origin: Vec2f::new(frame.origin[0] as f32, frame.origin[1] as f32),
-	}
+fn vec2f(v: Vec2i) -> Vec2f {
+	Vec2f::new(v.x as f32, v.y as f32)
 }
 
-fn _sprite_frames(sheet: &chipty::SpriteSheet<chipty::SpriteId>, sprite: chipty::SpriteId) -> u16 {
+fn sprite_uv(sheet: &shade::atlas::Atlas<chipty::SpriteId>, sprite: chipty::SpriteId, frame: u16) -> SpriteUV {
 	let Some(entry) = sheet.sprites.get(&sprite) else {
 		panic!("sprite {:?} not found in sheet", sprite);
 	};
-	entry.len
+	let frame = entry.get_frame_wrapping(frame as usize)
+		.unwrap_or_else(|| panic!("sprite {:?} has zero frames", sprite));
+	let rect = frame.rect;
+	let quad = frame.get_sprite();
+
+	SpriteUV {
+		top_left: vec2f(quad.top_left),
+		top_right: vec2f(quad.top_right),
+		bottom_left: vec2f(quad.bottom_left),
+		bottom_right: vec2f(quad.bottom_right),
+		width: rect.width as f32,
+		height: rect.height as f32,
+		origin: Vec2f::new(frame.origin.x as f32, frame.origin.y as f32),
+	}
 }

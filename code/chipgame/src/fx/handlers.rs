@@ -148,7 +148,7 @@ pub fn entity_step(fx: &mut FxState, ehandle: chipcore::EntityHandle) {
 	}));
 	obj.anim.anims.push(render::AnimState::AnimSeq(render::SpriteAnimSeq {
 		start_time: fx.time,
-		frame_count: 4, //render::sprite_frames(&resx.spritesheet_meta, obj.data.sprite),
+		frame_count: 4,
 		frame_rate: 16.0,
 	}));
 

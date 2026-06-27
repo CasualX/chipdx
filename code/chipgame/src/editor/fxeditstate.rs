@@ -130,7 +130,7 @@ impl FxEditState {
 		cv.cull_mode = Some(shade::CullMode::CW);
 		cv.shader = Some(resx.shader.as_ref());
 		cv.uniform.transform = camera.view_proj;
-		cv.uniform.texture = resx.spritesheet_texture.as_ref();
+		cv.uniform.texture = resx.sprites_texture.as_ref();
 		cv.uniform.shadow_tint = Vec3::dup(1.0);
 
 		self.draw_tiles(&mut cv, resx, camera);
@@ -147,7 +147,7 @@ impl FxEditState {
 		cv.cull_mode = Some(shade::CullMode::CW);
 		cv.shader = Some(resx.shader.as_ref());
 		cv.uniform.transform = camera.view_proj;
-		cv.uniform.texture = resx.spritesheet_texture.as_ref();
+		cv.uniform.texture = resx.sprites_texture.as_ref();
 		cv.uniform.shadow_tint = Vec3::dup(1.0);
 
 		self.draw_entities(&mut cv, resx, camera);

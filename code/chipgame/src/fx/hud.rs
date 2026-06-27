@@ -57,7 +57,7 @@ impl FxState {
 		sprites.blend_mode = shade::BlendMode::Alpha;
 		sprites.shader = Some(resx.shader2d_pixelart.as_ref());
 		sprites.uniform.transform = Transform2f::ortho(resx.viewport.cast());
-		sprites.uniform.texture = resx.spritesheet_texture.as_ref();
+		sprites.uniform.texture = resx.sprites_texture.as_ref();
 		if game.ps.keys[0] > 0 {
 			draw_sprite(sprites, resx, chipty::SpriteId::BlueKey, Vec2(keys_x1 + a * 0.5, y), a);
 		}
@@ -226,7 +226,7 @@ impl FxState {
 }
 
 fn draw_sprite(cv: &mut shade::d2::TexturedBuffer, resx: &Resources, sprite: chipty::SpriteId, pos: Vec2<f32>, size: f32) {
-	let uv = sprite_uv(&resx.spritesheet_meta, sprite, 0);
+	let uv = sprite_uv(&resx.sprites_atlas, sprite, 0);
 	let color = Vec4(255, 255, 255, 255);
 	let top_left = shade::d2::TexturedTemplate { uv: uv.top_left(), color };
 	let bottom_left = shade::d2::TexturedTemplate { uv: uv.bottom_left(), color };
@@ -236,10 +236,14 @@ fn draw_sprite(cv: &mut shade::d2::TexturedBuffer, resx: &Resources, sprite: chi
 	cv.sprite_rect(&sprite, &Bounds2(pos, pos + Vec2(size, size)));
 }
 
-fn sprite_uv(sheet: &chipty::SpriteSheet<chipty::SpriteId>, sprite: chipty::SpriteId, frame: usize) -> Bounds2f {
-	let entry = sheet.sprites.get(&sprite).unwrap();
-	assert!(frame < entry.len as usize, "frame index in bounds");
-	let f = &sheet.frames[(entry.index as usize) + frame];
-	let [x, y, width, height] = f.rect;
-	Bounds2!(x as f32 / sheet.width as f32, y as f32 / sheet.height as f32, (x + width) as f32 / sheet.width as f32, (y + height) as f32 / sheet.height as f32)
+fn sprite_uv(sheet: &shade::atlas::Atlas<chipty::SpriteId>, sprite: chipty::SpriteId, frame: usize) -> Bounds2f {
+	let sprite = sheet.sprites.get(&sprite).unwrap();
+	let frame = sprite.get_frame(frame).expect("frame index in bounds");
+	let rect = frame.rect;
+	Bounds2!(
+		rect.x as f32 / sheet.meta.width as f32,
+		rect.y as f32 / sheet.meta.height as f32,
+		rect.right() as f32 / sheet.meta.width as f32,
+		rect.bottom() as f32 / sheet.meta.height as f32,
+	)
 }

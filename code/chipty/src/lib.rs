@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::str;
 use cvmath::*;
 
@@ -13,7 +12,6 @@ mod replay;
 mod savedata;
 mod soundfx;
 mod sprite;
-mod spritesheet;
 mod terrain;
 
 pub use compass::*;
@@ -27,7 +25,6 @@ pub use replay::*;
 pub use savedata::*;
 pub use soundfx::*;
 pub use sprite::*;
-pub use spritesheet::*;
 pub use terrain::*;
 
 fn is_default<T: Default + PartialEq>(value: &T) -> bool {

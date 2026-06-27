@@ -357,7 +357,7 @@ pub fn draw(
 		}
 	}
 
-	let spr = sprite_uv(&resx.spritesheet_meta, sprite, frame);
+	let spr = sprite_uv(&resx.sprites_atlas, sprite, frame);
 	let face_dir = sprite.face_dir();
 
 	match model {

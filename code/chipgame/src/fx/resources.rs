@@ -51,8 +51,8 @@ pub struct PostProcessEffect {
 
 pub struct Resources {
 	pub effects: Box<dyn shade::Texture2D>,
-	pub spritesheet_texture: Box<dyn shade::Texture2D>,
-	pub spritesheet_meta: chipty::SpriteSheet<chipty::SpriteId>,
+	pub sprites_texture: Box<dyn shade::Texture2D>,
+	pub sprites_atlas: shade::atlas::Atlas<chipty::SpriteId>,
 
 	pub shader: Box<dyn shade::ShaderProgram>,
 	pub shader_shadowmap: Box<dyn shade::ShaderProgram>,
@@ -134,13 +134,13 @@ impl Resources {
 			shade::d2::FontResource { font, shader, texture }
 		};
 
-		let spritesheet_meta = fs.read_to_string("spritesheet.json").expect("Failed to read spritesheet metadata");
-		let spritesheet_meta = serde_json::from_str(&spritesheet_meta).expect("Failed to parse spritesheet metadata");
+		let sprite_atlas = fs.read_to_string("spritesheet.json").expect("Failed to read sprite atlas metadata");
+		let sprites_atlas = serde_json::from_str(&sprite_atlas).expect("Failed to parse sprite atlas metadata");
 
 		Resources {
 			effects: textures.remove("Effects").expect("Effects texture is not configured"),
-			spritesheet_texture: textures.remove("SpriteSheet").expect("SpriteSheet texture is not configured"),
-			spritesheet_meta,
+			sprites_texture: textures.remove("SpriteSheet").expect("SpriteSheet texture is not configured"),
+			sprites_atlas,
 
 			shader: shaders.remove("PixelArt").expect("PixelArt shader is not configured"),
 			shader_shadowmap: shaders.remove("PixelArtShadowMap").expect("PixelArtShadowMap shader is not configured"),
