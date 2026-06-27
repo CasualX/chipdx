@@ -20,6 +20,7 @@ window.chipGame = function chipGame() {
 		loadingStatus: "Starting...",
 		loadingProgress: 0,
 		hudText: "",
+		levelSetFilePromptVisible: false,
 		showDisplayModeCta: false,
 		detectedControlScheme: "keyboard",
 		selectedControlScheme: "keyboard",
@@ -55,7 +56,9 @@ window.chipGame = function chipGame() {
 		currentMusicKey: null,
 		requestedMusicKey: null,
 		wasmExports: null,
+		wasmMemory: null,
 		wasmGamePtr: 0,
+		lastWasmError: null,
 		frameHandle: 0,
 		initialized: false,
 		cleanupRegistered: false,
@@ -343,6 +346,7 @@ window.chipGame = function chipGame() {
 
 		getButtonsBitmask() {
 			if (!this.pageActive) return 0;
+			if (this.levelSetFilePromptVisible) return 0;
 
 			let buttons = 0;
 			if (this.pressedKeys.has("ArrowUp") || this.pressedKeys.has("KeyW")) buttons |= INPUT_UP;
@@ -449,6 +453,76 @@ window.chipGame = function chipGame() {
 			this.requestFullscreenOnTouch();
 			await this.requestLandscapeLock();
 			this.updateDisplayModeCta();
+		},
+
+		requestLevelSetFile() {
+			this.levelSetFilePromptVisible = true;
+			requestAnimationFrame(() => {
+				try {
+					this.$refs.levelSetFileInput?.click();
+				}
+				catch {
+					// The visible button remains available.
+				}
+			});
+		},
+
+		allocWasmBytes(bytes) {
+			const exports = this.wasmExports;
+			const wasmMemory = this.wasmMemory;
+			if (!exports || !wasmMemory || !exports.allocBytes || !exports.freeBytes) {
+				throw new Error("WASM byte allocation bridge is not ready");
+			}
+			const capacity = Math.max(1, bytes.length);
+			const ptr = exports.allocBytes(capacity);
+			if (!ptr) {
+				throw new Error("WASM allocBytes() returned null");
+			}
+			new Uint8Array(wasmMemory.buffer, ptr, bytes.length).set(bytes);
+			return {
+				ptr,
+				len: bytes.length,
+				capacity,
+			};
+		},
+
+		getLevelSetDisplayName(file) {
+			const rawName = file && file.name ? file.name : "Local Levelset";
+			const baseName = rawName.split(/[\\/]/).pop() || rawName;
+			const displayName = baseName.replace(/\.(dat|ccl)$/i, "").trim();
+			return displayName || "Local Levelset";
+		},
+
+		async loadLocalLevelSet(event) {
+			const input = event.target;
+			const file = input.files && input.files[0];
+			input.value = "";
+			this.levelSetFilePromptVisible = false;
+			if (!file) return;
+			try {
+				const dataBytes = new Uint8Array(await file.arrayBuffer());
+				const nameBytes = new TextEncoder().encode(this.getLevelSetDisplayName(file));
+				const data = this.allocWasmBytes(dataBytes);
+				const name = this.allocWasmBytes(nameBytes);
+				try {
+					this.lastWasmError = null;
+					const result = this.wasmExports.loadLocalLevelSet(this.wasmGamePtr, data.ptr, data.len, name.ptr, name.len);
+					if (this.lastWasmError instanceof Error) {
+						throw this.lastWasmError;
+					}
+					if (result !== 0) {
+						throw new Error("Levelset file could not be loaded");
+					}
+				}
+				finally {
+					this.wasmExports.freeBytes(name.ptr, name.capacity);
+					this.wasmExports.freeBytes(data.ptr, data.capacity);
+				}
+			}
+			catch (err) {
+				console.error("levelset file load failed", err);
+				this.setLoadingStatus(String(err && err.message ? err.message : err));
+			}
 		},
 
 		setPadDirection(dir) {
@@ -666,6 +740,11 @@ window.chipGame = function chipGame() {
 
 			const resultError = (message_ptr, message_len) => {
 				resultValue = new Error(readUtf8(message_ptr, message_len) || "Unknown error");
+				this.lastWasmError = resultValue;
+			};
+
+			const requestLevelSetFile = () => {
+				this.requestLevelSetFile();
 			};
 
 			const readFile = (path_ptr, path_len, content_ptr, content_len_ptr) => {
@@ -726,6 +805,7 @@ window.chipGame = function chipGame() {
 					registerSound,
 					registerMusic,
 					setTitle,
+					requestLevelSetFile,
 					quitGame,
 					resultError,
 					readFile,
@@ -740,22 +820,10 @@ window.chipGame = function chipGame() {
 
 			const exports = instance.exports;
 			this.wasmExports = exports;
+			this.wasmMemory = wasmMemory;
 
 			const allocWasmBytes = (bytes) => {
-				if (!exports.allocBytes || !exports.freeBytes) {
-					throw new Error("WASM exports missing allocBytes/freeBytes bridge");
-				}
-				const capacity = Math.max(1, bytes.length);
-				const ptr = exports.allocBytes(capacity);
-				if (!ptr) {
-					throw new Error("WASM allocBytes() returned null");
-				}
-				new Uint8Array(wasmMemory.buffer, ptr, bytes.length).set(bytes);
-				return {
-					ptr,
-					len: bytes.length,
-					capacity,
-				};
+				return this.allocWasmBytes(bytes);
 			};
 
 			this.setLoadingStatus("Starting...", 0.8);

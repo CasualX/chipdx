@@ -20,12 +20,14 @@ impl LevelSet {
 pub struct LevelSets {
 	pub selected: i32,
 	pub collection: Vec<LevelSet>,
+	pub external_loader_label: Option<String>,
 }
 impl Default for LevelSets {
 	fn default() -> Self {
 		Self {
 			selected: -1,
 			collection: Vec::new(),
+			external_loader_label: None,
 		}
 	}
 }
@@ -115,7 +117,7 @@ pub fn load_levelset(fs: &FileSystem, name: String, sets: &mut Vec<LevelSet>) {
 	load_levelset_dto(Some(fs), index, name, sets);
 }
 
-fn load_levelset_dto(fs: Option<&FileSystem>, index: chipty::LevelSetDto, name: String, sets: &mut Vec<LevelSet>) {
+pub fn load_levelset_dto(fs: Option<&FileSystem>, index: chipty::LevelSetDto, name: String, sets: &mut Vec<LevelSet>) {
 	let mut levels = Vec::new();
 	for level_ref in index.levels {
 		let level = match level_ref {
@@ -140,7 +142,7 @@ fn load_levelset_dto(fs: Option<&FileSystem>, index: chipty::LevelSetDto, name: 
 		levels.push(level);
 	}
 
-	let splash = index.splash.and_then(|s| match fs.unwrap() {
+	let splash = index.splash.and_then(|s| match fs? {
 		FileSystem::Memory(paks, key) => paks.read(s.as_bytes(), key).ok(),
 		FileSystem::Paks(paks, key) => paks.read(s.as_bytes(), key).ok(),
 		FileSystem::Bundle(bundle) => bundle.read(s.as_bytes(), bundle.key()).ok(),

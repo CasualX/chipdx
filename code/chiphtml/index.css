@@ -126,6 +126,37 @@ body::before {
 	line-height: 1;
 }
 
+#levelset-file-input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+#levelset-file-prompt {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	padding: 20px;
+	background: rgba(2, 6, 23, 0.68);
+	z-index: 6;
+}
+
+#levelset-file-prompt button {
+	appearance: none;
+	padding: 13px 18px;
+	border-radius: 4px;
+	border-color: rgba(249, 115, 22, 0.7);
+	background: linear-gradient(135deg, #f59e0b, #ea580c);
+	color: #fff7ed;
+	font: inherit;
+	font-size: 16px;
+	font-weight: 800;
+	cursor: pointer;
+}
+
 #loading-screen {
 	position: absolute;
 	inset: 0;

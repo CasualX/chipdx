@@ -7,6 +7,7 @@ extern "C" {
 	pub fn registerSound(sound_id: i32, data_ptr: *const u8, data_len: usize);
 	pub fn registerMusic(music_id: i32, data_ptr: *const u8, data_len: usize);
 	pub fn setTitle(title_ptr: *const u8, title_len: usize);
+	pub fn requestLevelSetFile();
 	pub fn resultError(message_ptr: *const u8, message_len: usize);
 	pub fn readFile(path_ptr: *const u8, path_len: usize, content_ptr: *mut u8, content_len: *mut usize) -> i32;
 	pub fn writeFile(path_ptr: *const u8, path_len: usize, content_ptr: *const u8, content_len: usize) -> i32;

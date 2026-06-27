@@ -4,11 +4,16 @@ use super::*;
 pub struct LevelSetMenu {
 	pub selected: usize,
 	pub items: Vec<String>,
+	pub external_loader_label: Option<String>,
 	pub splash: Vec<Option<shade::AnimatedTexture2D>>,
 	pub ntime: i32,
 }
 
 impl LevelSetMenu {
+	fn item_count(&self) -> usize {
+		self.items.len() + usize::from(self.external_loader_label.is_some())
+	}
+
 	pub fn think(&mut self, input: &Input, events: &mut Vec<MenuEvent>) {
 		if input.up.is_pressed() {
 			if self.selected > 0 {
@@ -17,13 +22,18 @@ impl LevelSetMenu {
 			}
 		}
 		if input.down.is_pressed() {
-			if self.selected + 1 < self.items.len() {
+			if self.selected + 1 < self.item_count() {
 				self.selected = self.selected + 1;
 				events.push(MenuEvent::CursorMove);
 			}
 		}
 		if input.a.is_pressed() {
-			events.push(MenuEvent::LoadLevelSet { index: self.selected });
+			if self.selected < self.items.len() {
+				events.push(MenuEvent::LoadLevelSet { index: self.selected });
+			}
+			else {
+				events.push(MenuEvent::LoadExternalLevelSet);
+			}
 			events.push(MenuEvent::CursorSelect);
 		}
 		if input.b.is_pressed() {
@@ -85,7 +95,10 @@ impl LevelSetMenu {
 			buf.text_box(&resx.font, &scribe, &top, shade::d2::TextAlign::MiddleCenter, "Choose LevelSet");
 		}
 
-		let items = self.items.iter().map(|s| s as &dyn fmt::Display).collect::<Vec<_>>();
+		let mut items = self.items.iter().map(|s| s as &dyn fmt::Display).collect::<Vec<_>>();
+		if let Some(label) = &self.external_loader_label {
+			items.push(label as &dyn fmt::Display);
+		}
 
 		draw::DrawMenuItems {
 			items_text: &items,

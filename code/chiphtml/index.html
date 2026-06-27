@@ -47,6 +47,10 @@
 				<span id="display-mode-cta-icon" aria-hidden="true">⛶</span>
 				<span>Fullscreen</span>
 			</button>
+			<input id="levelset-file-input" x-ref="levelSetFileInput" type="file" accept=".dat,.ccl,application/octet-stream" @change="loadLocalLevelSet($event)" />
+			<div id="levelset-file-prompt" x-cloak x-show="levelSetFilePromptVisible" @click.self="levelSetFilePromptVisible = false">
+				<button type="button" @click="$refs.levelSetFileInput.click()">Choose Levelset File</button>
+			</div>
 			<div id="loading-screen" aria-live="polite" x-cloak x-show="!gameActive">
 				<div id="loading-panel-frame" :style="{ width: loadingPanelFrameWidth + 'px', height: loadingPanelFrameHeight + 'px' }">
 					<div id="loading-panel" x-ref="loadingPanel" :class="{ landscape: showAllControlHints }" :style="{ transform: 'scale(' + loadingPanelScale + ')' }">

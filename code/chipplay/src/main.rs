@@ -256,6 +256,7 @@ fn main() {
 								&chipgame::play::PlayEvent::PlayMusic { music } => ap.play_music(music),
 								&chipgame::play::PlayEvent::SetTitle => app.set_title(&state),
 								&chipgame::play::PlayEvent::Restart => state.launch(&mut app.g),
+								&chipgame::play::PlayEvent::LoadExternalLevelSet => (),
 								&chipgame::play::PlayEvent::Quit => event_loop.exit(),
 							}
 						}
