@@ -1,22 +1,22 @@
 //! Level editor.
 
-use std::collections::HashMap;
 use std::{fmt, mem};
 use cvmath::*;
-use chipcore::EntityHandle;
-use chipty::{Compass, EntityArgs, EntityKind, FieldConn, FieldDto, LevelDto, Terrain};
+use chipty::{EntityArgs, EntityKind, FieldConn, LevelDto, Terrain};
 
 use crate::fx;
 use crate::render;
 use crate::menu;
 
 mod editstate;
+mod fxeditstate;
 mod playstate;
 mod tiles;
 mod tool;
 mod history;
 
 use self::editstate::EditorEditState;
+use self::fxeditstate::FxEditState;
 use self::playstate::EditorPlayState;
 pub use self::tool::*;
 pub use self::history::History;
@@ -238,7 +238,7 @@ impl EditorState {
 
 	pub fn take_fx_events(&mut self) -> Vec<fx::FxEvent> {
 		match self {
-			EditorState::Edit(s) => mem::take(&mut s.fx.events),
+			EditorState::Edit(_) => Vec::new(),
 			EditorState::Play(s) => mem::take(&mut s.fx.events),
 		}
 	}

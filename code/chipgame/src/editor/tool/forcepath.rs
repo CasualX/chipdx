@@ -9,9 +9,8 @@ impl ForcePathToolState {
 	pub fn left_click(&mut self, s: &mut EditorEditState, pressed: bool) {
 		if pressed {
 			// Start a new force floor path with a random force tile at the cursor.
-			s.fx.game.set_terrain(s.cursor_pos, Terrain::ForceRandom);
+			s.fx.set_terrain(s.cursor_pos, Terrain::ForceRandom);
 			self.last_pos = Some(s.cursor_pos);
-			s.fx.sync();
 		}
 		else {
 			// Stop drawing.
@@ -43,12 +42,11 @@ impl ForcePathToolState {
 		let cursor_dir = chipty::Compass::from_vec(cursor_pos - last_pos);
 		if let Some(cursor_dir) = cursor_dir {
 			let terrain = force_tile_for_dir(cursor_dir);
-			s.fx.game.set_terrain(last_pos, terrain);
-			s.fx.game.set_terrain(cursor_pos, terrain);
+			s.fx.set_terrain(last_pos, terrain);
+			s.fx.set_terrain(cursor_pos, terrain);
 		}
 
 		self.last_pos = Some(cursor_pos);
-		s.fx.sync();
 	}
 }
 

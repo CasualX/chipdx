@@ -6,7 +6,7 @@ const ZOOM_MAX: f32 = 1024.0;
 
 #[derive(Default)]
 pub struct EditorEditState {
-	pub fx: Box<fx::FxState>,
+	pub fx: Box<FxEditState>,
 	pub tool: Option<ToolState>,
 
 	pub screen_size: Vec2<i32>,
@@ -23,15 +23,7 @@ impl EditorEditState {
 		let mut level_dto: LevelDto = serde_json::from_str(json).unwrap();
 		level_dto.normalize();
 
-		self.fx = fx::FxState::new(0, &level_dto, chipcore::RngSeed::System, &tiles::TILES);
-		self.fx.hud_enabled = false;
-		// Initialize the camera far enough to see the whole level
-		let controller = fx::PositionController { target: Vec2f(26.0 * 16.0, 20.0 * 16.0) };
-		self.fx.camera.set_controller(fx::Controller::FreeRoam(controller), self.fx.time);
-		self.fx.camera.set_perspective(false);
-		self.fx.camera.set_zoom_mode(chipty::ZoomMode::Editor, false, self.fx.time);
-		// Unlock the camera
-		self.fx.pause();
+		self.fx = FxEditState::new(chipcore::EditState::from_level_dto(&level_dto), &tiles::TILES);
 
 		// Reset history to the freshly loaded level
 		self.history.clear(json.to_string());
@@ -42,70 +34,34 @@ impl EditorEditState {
 
 		// Reload the level but keep the camera position
 		let old_cam = self.fx.camera.clone();
-		self.fx = fx::FxState::new(0, &level_dto, chipcore::RngSeed::System, &tiles::TILES);
+		self.fx = FxEditState::new(chipcore::EditState::from_level_dto(&level_dto), &tiles::TILES);
 		self.fx.camera = old_cam;
-		// Unlock the camera
-		self.fx.pause();
 	}
 	pub fn save_level_dto(&self) -> chipty::LevelDto {
-		let mut legend_map = HashMap::new();
-		let mut legend = Vec::new();
-		legend_map.insert(Terrain::Blank, 0); legend.push(Terrain::Blank);
-		legend_map.insert(Terrain::Floor, 1); legend.push(Terrain::Floor);
-		let mut idx = 2;
-		for &terrain in self.fx.game.field.terrain.iter() {
-			if !legend_map.contains_key(&terrain) {
-				legend_map.insert(terrain, idx);
-				legend.push(terrain);
-				idx += 1;
-			}
-		}
-		let data = self.fx.game.field.terrain.iter().map(|&terrain| legend_map[&terrain]).collect();
-		let entities = self.fx.game.ents.iter().map(chipcore::Entity::to_entity_args).collect();
-		let mut level = chipty::LevelDto {
-			name: self.fx.game.field.name.clone(),
-			author: self.fx.game.field.author.clone(),
-			hint: self.fx.game.field.hint.clone(),
-			password: self.fx.game.field.password.clone(),
-			time_limit: self.fx.game.field.time_limit,
-			required_chips: self.fx.game.field.required_chips,
-			map: FieldDto {
-				width: self.fx.game.field.width,
-				height: self.fx.game.field.height,
-				data,
-				legend,
-			},
-			entities,
-			connections: self.fx.game.field.conns.clone(),
-			camera_triggers: self.fx.game.field.camera_triggers.clone(),
-			replays: self.fx.game.field.replays.clone(),
-			trophies: self.fx.game.field.trophies.clone(),
-		};
-		level.normalize();
-		level
+		self.fx.edit.to_level_dto()
 	}
 	pub fn save_level(&self) -> String {
 		let dto = self.save_level_dto();
 		serde_json::to_string(&dto).unwrap()
 	}
 	pub fn set_level_name(&mut self, value: String) {
-		self.fx.game.field.name = value;
+		self.fx.edit.name = value;
 		self.push_history();
 	}
 	pub fn set_author(&mut self, value: Option<String>) {
-		self.fx.game.field.author = value;
+		self.fx.edit.author = value;
 		self.push_history();
 	}
 	pub fn set_hint(&mut self, value: Option<String>) {
-		self.fx.game.field.hint = value;
+		self.fx.edit.hint = value;
 		self.push_history();
 	}
 	pub fn set_required_chips(&mut self, value: i32) {
-		self.fx.game.field.required_chips = value.max(0);
+		self.fx.edit.required_chips = value.max(0);
 		self.push_history();
 	}
 	pub fn set_time_limit(&mut self, value: i32) {
-		self.fx.game.field.time_limit = value.max(0);
+		self.fx.edit.time_limit = value.max(0);
 		self.push_history();
 	}
 	pub fn set_screen_size(&mut self, width: i32, height: i32) {
@@ -162,9 +118,6 @@ impl EditorEditState {
 			self.fx.camera.pan_free_roam(Vec2f(0.0, 5.0), self.fx.time);
 		}
 
-		self.fx.camera.animate_blend();
-		self.fx.camera.animate_position(self.fx.time, self.fx.dt, resx.viewport.size());
-
 		if let Some(mut tool_state) = self.tool.take() {
 			tool_state.think(self);
 			if self.tool.is_none() {
@@ -190,14 +143,14 @@ impl EditorEditState {
 			cv.shader = Some(resx.shader.as_ref());
 			cv.uniform.transform = cam.view_proj;
 			cv.uniform.texture = resx.spritesheet_texture.as_ref();
-			cv.uniform.shadow_map = self.fx.render.shadow_map();
-			cv.uniform.light_matrix = self.fx.render.light_matrix;
+			cv.uniform.shadow_map = self.fx.shadow_map();
+			cv.uniform.light_matrix = self.fx.light_matrix;
 
 			for y in 0..TERRAIN_SAMPLES.len() as i32 {
 				for x in 0..2 {
 					let terrain = TERRAIN_SAMPLES[y as usize][x as usize];
 					let pos = Vec3::new((x - 3) as f32 * 32.0, y as f32 * 32.0, 0.0);
-					render::draw_tile(&mut cv, resx, terrain, pos, &self.fx.render.tiles);
+					render::draw_tile(&mut cv, resx, terrain, pos, self.fx.tiles);
 				}
 			}
 
@@ -209,13 +162,13 @@ impl EditorEditState {
 
 			match &self.tool {
 				Some(ToolState::Terrain(state)) => {
-					render::draw_tile(&mut cv, resx, state.selected_terrain, p, &self.fx.render.tiles);
+					render::draw_tile(&mut cv, resx, state.selected_terrain, p, self.fx.tiles);
 				}
 				Some(ToolState::IcePath(_state)) => {
-					render::draw_tile(&mut cv, resx, Terrain::Ice, p, &self.fx.render.tiles);
+					render::draw_tile(&mut cv, resx, Terrain::Ice, p, self.fx.tiles);
 				}
 				Some(ToolState::ForcePath(_state)) => {
-					render::draw_tile(&mut cv, resx, Terrain::ForceRandom, p, &self.fx.render.tiles);
+					render::draw_tile(&mut cv, resx, Terrain::ForceRandom, p, self.fx.tiles);
 				}
 				_ => (),
 			}
@@ -241,8 +194,8 @@ impl EditorEditState {
 				}
 			}
 			let mut pen = shade::d2::Pen { template: ToVertex { color: [255, 255, 255, 255] } };
-			for conn in &self.fx.game.field.conns {
-				let terrain = self.fx.game.field.get_terrain(conn.src);
+			for conn in &self.fx.edit.connections {
+				let terrain = self.fx.edit.get_terrain(conn.src);
 				pen.template.color = match terrain {
 					chipty::Terrain::GreenButton => [0, 255, 0, 255],
 					chipty::Terrain::RedButton => [255, 0, 0, 255],
@@ -257,7 +210,7 @@ impl EditorEditState {
 			}
 
 			let pen = shade::d2::Pen { template: ToVertex { color: [255, 0, 0, 255] } };
-			for ent in self.fx.game.ents.iter() {
+			for (_, ent) in self.fx.edit.entities_in_order() {
 				let pos = cam.world_to_viewport(ent.pos.map(|c| c as f32 * 32.0 + 16.0).vec3(0.0)).unwrap();
 				if let Some(face_dir) = ent.face_dir {
 					cv.draw_arrow(&pen, pos, pos + face_dir.to_vec().map(|c| c as f32 * 20.0), 4.0);
@@ -268,7 +221,7 @@ impl EditorEditState {
 		}
 
 		if let Some(ToolState::EntOrder(_state)) = &self.tool {
-			fx::draw_entity_order(&self.fx, g, resx, &cam);
+			fxeditstate::draw_entity_order(&self.fx, g, resx, &cam);
 		}
 
 		if let Some(tool_state) = &self.tool {
@@ -338,33 +291,15 @@ impl EditorEditState {
 	///
 	/// Positive values = expand, Negative values = crop.
 	pub fn resize(&mut self, left: i32, top: i32, right: i32, bottom: i32) {
-		let brush = self.fx.game.brush_create();
-
-		let new_width = self.fx.game.field.width + left + right;
-		let new_height = self.fx.game.field.height + top + bottom;
-		if new_width < chipty::FIELD_MIN_WIDTH || new_width > chipty::FIELD_MAX_WIDTH {
-			return;
-		}
-		if new_height < chipty::FIELD_MIN_HEIGHT || new_height > chipty::FIELD_MAX_HEIGHT {
-			return;
-		}
-
-		self.fx.game.field.width = new_width;
-		self.fx.game.field.height = new_height;
-		self.fx.game.field.terrain.clear();
 		let terrain = if let Some(ToolState::Terrain(state)) = &self.tool {
 			state.selected_terrain
 		}
 		else {
 			chipty::Terrain::Floor
 		};
-		self.fx.game.field.terrain.resize((new_width * new_height) as usize, terrain);
-		self.fx.game.field.conns.clear();
-		self.fx.game.ents.clear();
-
-		self.fx.game.brush_apply(Vec2i(left, top), &brush);
-
-		self.push_history();
+		if self.fx.resize(left, top, right, bottom, terrain) {
+			self.push_history();
+		}
 	}
 
 	pub fn left_click(&mut self, pressed: bool) {
@@ -432,25 +367,25 @@ impl EditorEditState {
 		else if cursor_pos.y < 0 {
 			if cursor_pos.y == -2 && cursor_pos.x >= 0 && cursor_pos.x < ENTITY_SAMPLES.len() as i32 {
 				let (kind, _) = ENTITY_SAMPLES[cursor_pos.x as usize];
-				let selected_ent = EntityHandle::INVALID;
+				let selected_ent = None;
 				let selected_args = Some(EntityArgs { kind, pos: cursor_pos, face_dir: None });
 				s.tool = Some(ToolState::Entity(EntityToolState { selected_ent, selected_args }));
 			}
 		}
 		else {
 			// Sample from the existing entities
-			let ehandle = s.fx.game.ents.iter().find_map(|ent| if ent.pos == cursor_pos { Some(ent.handle) } else { None });
+			let ehandle = s.fx.edit.entity_at(cursor_pos);
 			if let Some(ehandle) = ehandle {
-				if let Some(ent) = s.fx.game.ents.get(ehandle) {
-					let selected_ent = ehandle;
-					let selected_args = Some(ent.to_entity_args());
+				if let Some(ent) = s.fx.edit.entity(ehandle) {
+					let selected_ent = Some(ehandle);
+					let selected_args = Some(*ent);
 					s.tool = Some(ToolState::Entity(EntityToolState { selected_ent, selected_args }));
 					println!("Selected: {:?} at {}", ent.kind, ent.pos);
 				}
 			}
 			// Sample from the terrain
 			else {
-				let selected_terrain = s.fx.game.field.get_terrain(cursor_pos);
+				let selected_terrain = s.fx.edit.get_terrain(cursor_pos);
 				s.tool = Some(ToolState::Terrain(TerrainToolState { selected_terrain }));
 			}
 		}

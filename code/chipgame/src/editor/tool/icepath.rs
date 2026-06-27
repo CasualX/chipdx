@@ -10,10 +10,9 @@ impl IcePathToolState {
 	pub fn left_click(&mut self, s: &mut EditorEditState, pressed: bool) {
 		if pressed {
 			// Start a new ice path
-			s.fx.game.set_terrain(s.cursor_pos, chipty::Terrain::Ice);
+			s.fx.set_terrain(s.cursor_pos, chipty::Terrain::Ice);
 			self.last_pos = Some(s.cursor_pos);
 			self.last_dir = None;
-			s.fx.sync();
 		}
 		else {
 			// Stop drawing
@@ -46,14 +45,13 @@ impl IcePathToolState {
 		let cursor_dir = chipty::Compass::from_vec(cursor_pos - last_pos);
 		if let (Some(last_dir), Some(cursor_dir)) = (self.last_dir, cursor_dir) {
 			let terrain = ice_tile_for_turn(last_dir, cursor_dir);
-			s.fx.game.set_terrain(last_pos, terrain);
+			s.fx.set_terrain(last_pos, terrain);
 		}
 
 		// Mark the current tile as ice terrain
-		s.fx.game.set_terrain(cursor_pos, chipty::Terrain::Ice);
+		s.fx.set_terrain(cursor_pos, chipty::Terrain::Ice);
 		self.last_pos = Some(cursor_pos);
 		self.last_dir = cursor_dir;
-		s.fx.sync();
 	}
 }
 

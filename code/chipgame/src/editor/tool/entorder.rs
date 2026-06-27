@@ -22,14 +22,11 @@ impl EntOrderToolState {
 
 	fn move_entity(&self, s: &mut EditorEditState, inc: bool) {
 		let cursor_pos = s.cursor_pos;
-		let mut level = s.save_level_dto();
-		if let Some(index) = level.entities.iter().position(|ent| ent.pos == cursor_pos) {
-			let new_index = if inc { usize::min(index + 1, level.entities.len() - 1) } else { index.saturating_sub(1) };
+		let entities: Vec<_> = s.fx.edit.entities_in_order().map(|(id, args)| (id, *args)).collect();
+		if let Some(index) = entities.iter().position(|(_, ent)| ent.pos == cursor_pos) {
+			let new_index = if inc { usize::min(index + 1, entities.len() - 1) } else { index.saturating_sub(1) };
 			if index != new_index {
-				level.entities.swap(index, new_index);
-				// Reload the level
-				let json = serde_json::to_string(&level).unwrap();
-				s.reload_level(&json);
+				s.fx.swap_entity_order(entities[index].0, entities[new_index].0);
 			}
 		}
 	}

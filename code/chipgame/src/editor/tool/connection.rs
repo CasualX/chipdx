@@ -14,12 +14,7 @@ impl ConnectionToolState {
 			let new_conn = FieldConn { src: self.conn_src, dest: s.cursor_pos };
 
 			if new_conn.src != new_conn.dest {
-				if let Some(index) = s.fx.game.field.conns.iter().position(|conn| conn == &new_conn) {
-					s.fx.game.field.conns.remove(index);
-				}
-				else {
-					s.fx.game.field.conns.push(new_conn);
-				}
+				s.fx.toggle_connection(new_conn);
 			}
 		}
 	}

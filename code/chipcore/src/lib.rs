@@ -8,6 +8,7 @@ use chipty::*;
 
 mod cheats;
 mod edit;
+mod editstate;
 mod entities;
 mod entity;
 mod entitymap;
@@ -27,6 +28,7 @@ pub use self::entities::*;
 pub use self::entity::*;
 pub use self::entitymap::*;
 pub use self::event::*;
+pub use self::editstate::*;
 pub use self::field::*;
 pub use self::gamestate::*;
 use self::hidden::*;
