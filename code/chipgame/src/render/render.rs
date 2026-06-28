@@ -282,70 +282,59 @@ fn draw_portal(cv: &mut shade::im::DrawBuilder<Vertex, Uniform>, spr: &SpriteUV,
 }
 
 fn draw_tank(cv: &mut shade::im::DrawBuilder<Vertex, Uniform>, spr: &SpriteUV, pos: Vec3<f32>, face_dir: Option<chipty::Compass>, alpha: f32) {
-	let mut p = cv.begin(shade::PrimType::Triangles, 8, 10);
+	let mut p = cv.begin(shade::PrimType::Triangles, 8, 8);
 
 	p.add_indices(&[
 		0, 1, 4, 4, 1, 5,
 		1, 2, 5, 5, 2, 6,
 		2, 3, 6, 6, 3, 7,
-		3, 0, 7, 7, 0, 4,
 		4, 6, 7, 4, 5, 6,
 	]);
 
-	let x = pos.x;
-	let y = pos.y;
-	let z = pos.z;
-	let base = 0.0;
-
-	let s = 8.0 + base;//if matches!(sprite, data::Sprite::Wall) { 0.0 } else { 4.0 };
-	let t = 8.0;
-	let tall = 8.0; //if block.is_door() { 15.0 } else { 20.0 };
+	let s = 8.0;
+	let tall = 8.0;
 
 	let color = [255, 255, 255, (alpha * 255.0) as u8];
+	let face_dir = face_dir.unwrap_or(chipty::Compass::Up);
 
-	_ = face_dir;
+	let tank_uv = |p: Vec2f| {
+		let u = p.x / spr.width;
+		let v = p.y / spr.height;
+		let top = spr.top_left + (spr.top_right - spr.top_left) * u;
+		let bottom = spr.bottom_left + (spr.bottom_right - spr.bottom_left) * u;
+		top + (bottom - top) * v
+	};
 
-	p.add_vertex(Vertex {
-		pos: Vec3(x + base, y + base, z),
-		uv: spr.top_left,
-		color,
-	});
-	p.add_vertex(Vertex {
-		pos: Vec3(x + base, y + spr.height - base, z),
-		uv: spr.bottom_left,
-		color,
-	});
-	p.add_vertex(Vertex {
-		pos: Vec3(x + spr.width - base, y + spr.height - base, z),
-		uv: spr.bottom_right,
-		color,
-	});
-	p.add_vertex(Vertex {
-		pos: Vec3(x + spr.width - base, y + base, z),
-		uv: spr.top_right,
-		color,
-	});
+	let rotate = |p: Vec2f| {
+		let c = Vec2f(spr.width, spr.height) * 0.5;
+		let d = p - c;
+		c + match face_dir {
+			chipty::Compass::Up => d,
+			chipty::Compass::Right => Vec2f(-d.y, d.x),
+			chipty::Compass::Down => -d,
+			chipty::Compass::Left => Vec2f(d.y, -d.x),
+		}
+	};
 
-	p.add_vertex(Vertex {
-		pos: Vec3(x + s, y + s, z + tall),
-		uv: spr.top_left + Vec2(t, t),
-		color,
-	});
-	p.add_vertex(Vertex {
-		pos: Vec3(x + s, y + spr.height - s, z + tall),
-		uv: spr.bottom_left + Vec2(t, -t),
-		color,
-	});
-	p.add_vertex(Vertex {
-		pos: Vec3(x + spr.width - s, y + spr.height - s, z + tall),
-		uv: spr.bottom_right + Vec2(-t, -t),
-		color,
-	});
-	p.add_vertex(Vertex {
-		pos: Vec3(x + spr.width - s, y + s, z + tall),
-		uv: spr.top_right + Vec2(-t, t),
-		color,
-	});
+	let points = [
+		(Vec2f(0.0, 0.0), 0.0),
+		(Vec2f(0.0, spr.height), 0.0),
+		(Vec2f(spr.width, spr.height), 0.0),
+		(Vec2f(spr.width, 0.0), 0.0),
+		(Vec2f(s, 0.0), tall),
+		(Vec2f(s, spr.height - s), tall),
+		(Vec2f(spr.width - s, spr.height - s), tall),
+		(Vec2f(spr.width - s, 0.0), tall),
+	];
+
+	for &(local_pos, z) in &points {
+		let local_pos = rotate(local_pos);
+		p.add_vertex(Vertex {
+			pos: pos + local_pos.vec3(z),
+			uv: tank_uv(local_pos),
+			color,
+		});
+	}
 }
 
 pub fn draw(
