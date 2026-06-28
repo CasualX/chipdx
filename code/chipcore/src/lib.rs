@@ -2,6 +2,7 @@
 Core chipgame gameplay code.
 */
 
+use std::collections::HashMap;
 use std::{cmp, fmt, mem, ops};
 use cvmath::Vec2i;
 use chipty::*;

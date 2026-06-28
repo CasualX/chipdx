@@ -23,6 +23,7 @@ pub struct GameState {
 	pub field: Field,
 	pub ents: EntityMap,
 	pub qt: QuadTree,
+	pub templates: HashMap<Vec2i, EntityArgs>,
 	pub rand: Random,
 	pub events: Events,
 	pub input: Input,
@@ -46,6 +47,7 @@ impl GameState {
 		self.field.parse(ld, seed);
 		self.ents.clear();
 		self.qt.init(ld.map.width, ld.map.height);
+		self.templates.clear();
 		self.rand.reseed(seed);
 		self.events.clear();
 		self.input = Input::default();
@@ -53,7 +55,12 @@ impl GameState {
 
 		// Create entities
 		for data in &ld.entities {
-			self.entity_create(data);
+			if matches!(self.field.get_terrain(data.pos), Terrain::CloneMachine) {
+				self.templates.entry(data.pos).or_insert(*data);
+			}
+			else {
+				self.entity_create(data);
+			}
 		}
 		// And update their hidden flags
 		for ehandle in self.ents.handles() {
@@ -236,10 +243,6 @@ impl GameState {
 	pub fn turn_around_tanks(&mut self) {
 		for other in self.ents.iter_mut() {
 			if matches!(other.kind, EntityKind::Tank) {
-				// Ignore Tank template entities
-				if other.flags & EF_TEMPLATE != 0 {
-					continue;
-				}
 				if let Some(face_dir) = other.face_dir {
 					other.face_dir = Some(face_dir.turn_around());
 					self.events.fire(GameEvent::EntityTurn { entity: other.handle });

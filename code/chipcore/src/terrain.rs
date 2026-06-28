@@ -57,12 +57,8 @@ pub fn red_button(s: &mut GameState, phase: &mut TerrainPhase, ent: &mut Entity)
 	}
 	else {
 		// Find the template entity connected to the red button
-		let template = s.qt.get(conn.dest)[0];
-		let Some(template_ent) = s.ents.get(template) else { return };
-		if template_ent.flags & EF_TEMPLATE == 0 {
-			return;
-		}
-		template_ent.to_entity_args()
+		let Some(&template) = s.templates.get(&conn.dest) else { return };
+		template
 	};
 	phase.spawns.push(args);
 

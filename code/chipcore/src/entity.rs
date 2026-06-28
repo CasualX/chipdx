@@ -57,8 +57,6 @@ pub const EF_HIDDEN: u8 = 1 << 1;
 pub const EF_TRAPPED: u8 = 1 << 2;
 /// Entity has been released from a trap.
 pub const EF_RELEASED: u8 = 1 << 3;
-/// Entity is a template for cloning.
-pub const EF_TEMPLATE: u8 = 1 << 4;
 /// Entity has been forced to move.
 pub const EF_MOMENTUM: u8 = 1 << 5;
 /// Entity has a new position after try_move.

@@ -123,11 +123,6 @@ pub fn try_move(s: &mut GameState, phase: &mut MovementPhase, ent: &mut Entity, 
 fn try_move_into(s: &mut GameState, phase: &mut MovementPhase, ent: &mut Entity, step_dir: Compass, new_pos: Vec2i) -> bool {
 	ent.flags &= !EF_NEW_POS;
 
-	// Template entities cannot be moved
-	if ent.flags & EF_TEMPLATE != 0 {
-		return false;
-	}
-
 	let mover_entity = ent.handle;
 	let mover_kind = ent.kind;
 	let dev_wtw = matches!(mover_kind, EntityKind::Player) && s.ps.dev_wtw;

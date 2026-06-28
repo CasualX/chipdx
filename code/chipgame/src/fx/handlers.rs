@@ -1,25 +1,21 @@
 use super::*;
 
-fn ent_pos(game: &chipcore::GameState, ent: &chipcore::Entity, pos: Vec2i, check_elevated: bool) -> Vec3f {
-	let terrain = game.field.get_terrain(pos);
-	let elevated = matches!(terrain, chipty::Terrain::CloneMachine);
-	let base_z = match ent.kind {
+fn ent_pos(kind: chipty::EntityKind, pos: Vec2i) -> Vec3f {
+	// Give sprites an offset based on their priority
+	let z = match kind {
 		chipty::EntityKind::Socket => 2.0,
 		chipty::EntityKind::Thief => 1.0,
 		_ => 0.0,
 	};
-	// Blocks appear on top of walls
-	let pos_z = if matches!(ent.kind, chipty::EntityKind::Block | chipty::EntityKind::IceBlock) { 0.0 } else if check_elevated && elevated { 20.0 } else { base_z };
-	let pos = Vec3::new(pos.x as f32 * 32.0, pos.y as f32 * 32.0, pos_z);
-	return pos;
+	Vec3::new(pos.x as f32 * 32.0, pos.y as f32 * 32.0, z)
 }
 
 pub fn entity_created(fx: &mut FxState, ehandle: chipcore::EntityHandle, kind: chipty::EntityKind) {
 	let Some(ent) = fx.game.ents.get(ehandle) else { return };
 
-	let pos = ent_pos(&fx.game, ent, ent.pos, true);
+	let pos = ent_pos(ent.kind, ent.pos);
 	let sprite = sprite_for_ent(ent, &fx.game);
-	let model = if pos.z >= 20.0 { chipty::ModelId::FloorSprite } else { model_for_ent(ent) };
+	let model = if pos.z >= 20.0 { chipty::ModelId::FloorSprite } else { model_for_kind(ent.kind) };
 	let mut obj = render::Object {
 		data: render::ObjectData {
 			pos,
@@ -27,7 +23,7 @@ pub fn entity_created(fx: &mut FxState, ehandle: chipcore::EntityHandle, kind: c
 			frame: 0,
 			model,
 			alpha: 1.0,
-			greyscale: ent.flags & chipcore::EF_TEMPLATE != 0,
+			greyscale: false,
 			depth_test: true,
 		},
 		anim: render::Animation {
@@ -55,6 +51,39 @@ pub fn entity_created(fx: &mut FxState, ehandle: chipcore::EntityHandle, kind: c
 			follow.move_spd = ent.base_spd as f32 / chipcore::FPS as f32;
 		}
 	}
+}
+
+fn template_pos(kind: chipty::EntityKind, pos: Vec2i) -> Vec3f {
+	let z = match kind {
+		chipty::EntityKind::Block | chipty::EntityKind::IceBlock => 0.0,
+		_ => 20.0,
+	};
+	let pos = Vec3::new(pos.x as f32 * 32.0, pos.y as f32 * 32.0, z);
+	return pos;
+}
+
+pub fn create_clone_template(fx: &mut FxState, args: chipty::EntityArgs) {
+	let pos = template_pos(args.kind, args.pos);
+	let sprite = sprite_for_args(args, &fx.game);
+	let model = if pos.z >= 20.0 { chipty::ModelId::FloorSprite } else { model_for_kind(args.kind) };
+	let obj = render::Object {
+		data: render::ObjectData {
+			pos,
+			sprite,
+			frame: 0,
+			model,
+			alpha: 1.0,
+			greyscale: true,
+			depth_test: true,
+		},
+		anim: render::Animation {
+			anims: Vec::new(),
+			unalive_after_anim: false,
+		},
+	};
+
+	let handle = fx.render.objects.alloc();
+	fx.render.objects.insert(handle, obj);
 }
 
 pub fn entity_removed(fx: &mut FxState, ehandle: chipcore::EntityHandle, kind: chipty::EntityKind) {
@@ -92,8 +121,8 @@ pub fn entity_step(fx: &mut FxState, ehandle: chipcore::EntityHandle) {
 
 	let src = ent.pos - match ent.step_dir { Some(step_dir) => step_dir.to_vec(), None => Vec2::ZERO };
 
-	let start_pos = ent_pos(&fx.game, ent, src, false);
-	let end_pos = ent_pos(&fx.game, ent, ent.pos, false);
+	let start_pos = ent_pos(ent.kind, src);
+	let end_pos = ent_pos(ent.kind, ent.pos);
 	obj.data.pos = start_pos;
 
 	obj.data.sprite = animated_sprite_for_ent(ent, &fx.game);
@@ -124,7 +153,7 @@ pub fn entity_step(fx: &mut FxState, ehandle: chipcore::EntityHandle) {
 	}));
 
 	// Quick hack to flatten sprites on top of walls
-	// obj.data.model = if end_pos.z >= 20.0 { chipty::ModelId::FloorSprite } else { model_for_ent(ent) };
+	// obj.data.model = if end_pos.z >= 20.0 { chipty::ModelId::FloorSprite } else { model_for_kind(ent.kind) };
 
 	if let Some(follow) = fx.camera.controller.follow_entity_mut() {
 		if follow.master == ehandle {
@@ -316,8 +345,8 @@ pub fn remove_fire(fx: &mut FxState, pos: Vec2<i32>) {
 	obj.anim.unalive_after_anim = true;
 }
 
-fn model_for_ent(ent: &chipcore::Entity) -> chipty::ModelId {
-	match ent.kind {
+fn model_for_kind(kind: chipty::EntityKind) -> chipty::ModelId {
+	match kind {
 		chipty::EntityKind::Block => chipty::ModelId::Wall,
 		chipty::EntityKind::IceBlock => chipty::ModelId::Wall,
 		chipty::EntityKind::Tank => chipty::ModelId::Tank,
@@ -446,9 +475,17 @@ fn animated_sprite_for_ent(ent: &chipcore::Entity, game: &chipcore::GameState) -
 }
 
 fn sprite_for_ent(ent: &chipcore::Entity, game: &chipcore::GameState) -> chipty::SpriteId {
-	match ent.kind {
-		chipty::EntityKind::Player => sprite_for_player(ent.face_dir, game.field.get_terrain(ent.pos)),
-		chipty::EntityKind::PlayerNPC => sprite_for_playernpc(ent.face_dir, game.field.get_terrain(ent.pos)),
+	sprite_for_parts(ent.kind, ent.face_dir, game.field.get_terrain(ent.pos))
+}
+
+fn sprite_for_args(args: chipty::EntityArgs, game: &chipcore::GameState) -> chipty::SpriteId {
+	sprite_for_parts(args.kind, args.face_dir, game.field.get_terrain(args.pos))
+}
+
+fn sprite_for_parts(kind: chipty::EntityKind, face_dir: Option<chipty::Compass>, terrain: chipty::Terrain) -> chipty::SpriteId {
+	match kind {
+		chipty::EntityKind::Player => sprite_for_player(face_dir, terrain),
+		chipty::EntityKind::PlayerNPC => sprite_for_playernpc(face_dir, terrain),
 		chipty::EntityKind::Chip => chipty::SpriteId::Chip,
 		chipty::EntityKind::Socket => chipty::SpriteId::Socket,
 		chipty::EntityKind::Block => chipty::SpriteId::DirtBlock,
@@ -462,14 +499,14 @@ fn sprite_for_ent(ent: &chipcore::Entity, game: &chipcore::GameState) -> chipty:
 		chipty::EntityKind::GreenKey => chipty::SpriteId::GreenKey,
 		chipty::EntityKind::YellowKey => chipty::SpriteId::YellowKey,
 		chipty::EntityKind::Thief => chipty::SpriteId::Thief,
-		chipty::EntityKind::Bug => match ent.face_dir {
+		chipty::EntityKind::Bug => match face_dir {
 			Some(chipty::Compass::Up) => chipty::SpriteId::BugN,
 			Some(chipty::Compass::Down) => chipty::SpriteId::BugS,
 			Some(chipty::Compass::Left) => chipty::SpriteId::BugW,
 			Some(chipty::Compass::Right) => chipty::SpriteId::BugE,
 			_ => chipty::SpriteId::BugN,
 		},
-		chipty::EntityKind::Tank => match ent.face_dir {
+		chipty::EntityKind::Tank => match face_dir {
 			Some(chipty::Compass::Up) => chipty::SpriteId::TankN,
 			Some(chipty::Compass::Down) => chipty::SpriteId::TankS,
 			Some(chipty::Compass::Left) => chipty::SpriteId::TankW,
@@ -478,21 +515,21 @@ fn sprite_for_ent(ent: &chipcore::Entity, game: &chipcore::GameState) -> chipty:
 		},
 		chipty::EntityKind::PinkBall => chipty::SpriteId::PinkBall,
 		chipty::EntityKind::FireBall => chipty::SpriteId::Fireball,
-		chipty::EntityKind::Glider => match ent.face_dir {
+		chipty::EntityKind::Glider => match face_dir {
 			Some(chipty::Compass::Up) => chipty::SpriteId::GliderN,
 			Some(chipty::Compass::Down) => chipty::SpriteId::GliderS,
 			Some(chipty::Compass::Left) => chipty::SpriteId::GliderW,
 			Some(chipty::Compass::Right) => chipty::SpriteId::GliderE,
 			_ => chipty::SpriteId::GliderN,
 		},
-		chipty::EntityKind::Walker => match ent.face_dir {
+		chipty::EntityKind::Walker => match face_dir {
 			Some(chipty::Compass::Up) => chipty::SpriteId::WalkerN,
 			Some(chipty::Compass::Down) => chipty::SpriteId::WalkerS,
 			Some(chipty::Compass::Left) => chipty::SpriteId::WalkerW,
 			Some(chipty::Compass::Right) => chipty::SpriteId::WalkerE,
 			_ => chipty::SpriteId::WalkerN,
 		},
-		chipty::EntityKind::Teeth => match ent.face_dir {
+		chipty::EntityKind::Teeth => match face_dir {
 			Some(chipty::Compass::Up) => chipty::SpriteId::TeethN,
 			Some(chipty::Compass::Down) => chipty::SpriteId::TeethS,
 			Some(chipty::Compass::Left) => chipty::SpriteId::TeethW,
@@ -500,7 +537,7 @@ fn sprite_for_ent(ent: &chipcore::Entity, game: &chipcore::GameState) -> chipty:
 			_ => chipty::SpriteId::TeethN,
 		},
 		chipty::EntityKind::Blob => chipty::SpriteId::Blob,
-		chipty::EntityKind::Paramecium => match ent.face_dir {
+		chipty::EntityKind::Paramecium => match face_dir {
 			Some(chipty::Compass::Up) => chipty::SpriteId::ParameciumN,
 			Some(chipty::Compass::Down) => chipty::SpriteId::ParameciumS,
 			Some(chipty::Compass::Left) => chipty::SpriteId::ParameciumW,

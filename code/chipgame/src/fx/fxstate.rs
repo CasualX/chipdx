@@ -103,6 +103,12 @@ impl FxState {
 			}
 		}
 
+		// Render clone templates separately; they are not gameplay entities.
+		let clone_templates: Vec<_> = fx.game.templates.values().copied().collect();
+		for args in clone_templates {
+			handlers::create_clone_template(&mut fx, args);
+		}
+
 		// Sync initial game state
 		fx.sync();
 		return fx;

@@ -19,10 +19,6 @@ pub fn create(s: &mut GameState, args: &EntityArgs) -> EntityHandle {
 }
 
 fn movement_phase(s: &mut GameState, phase: &mut MovementPhase, ent: &mut Entity) {
-	if ent.flags & EF_TEMPLATE != 0 {
-		return;
-	}
-
 	if s.time >= ent.step_time + ent.step_spd {
 		if try_terrain_move(s, phase, ent) { }
 		else if let Some(face_dir) = ent.face_dir {
@@ -51,10 +47,6 @@ fn movement_phase(s: &mut GameState, phase: &mut MovementPhase, ent: &mut Entity
 
 fn action_phase(s: &mut GameState, _phase: &mut ActionPhase, ent: &mut Entity) {
 	update_hidden_flag(s, ent);
-
-	if ent.flags & EF_TEMPLATE != 0 {
-		return;
-	}
 
 	ps_attack_pos(s, ent.pos, GameOverReason::Eaten);
 }

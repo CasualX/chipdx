@@ -22,10 +22,6 @@ pub fn create(s: &mut GameState, args: &EntityArgs) -> EntityHandle {
 }
 
 fn movement_phase(s: &mut GameState, phase: &mut MovementPhase, ent: &mut Entity) {
-	if ent.flags & EF_TEMPLATE != 0 {
-		return;
-	}
-
 	// Freeze player if game over
 	if s.is_game_over() {
 		return;

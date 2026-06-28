@@ -19,20 +19,12 @@ pub fn create(s: &mut GameState, args: &EntityArgs) -> EntityHandle {
 }
 
 fn movement_phase(s: &mut GameState, phase: &mut MovementPhase, ent: &mut Entity) {
-	if ent.flags & EF_TEMPLATE != 0 {
-		return;
-	}
-
 	if s.time >= ent.step_time + ent.step_spd {
 		try_terrain_move(s, phase, ent);
 	}
 }
 
 fn action_phase(s: &mut GameState, _phase: &mut ActionPhase, ent: &mut Entity) {
-	if ent.flags & EF_TEMPLATE != 0 {
-		return;
-	}
-
 	update_hidden_flag(s, ent);
 
 	let mut exploded = false;
