@@ -7,8 +7,6 @@ pub struct FxEditState {
 	pub dt: f64,
 	pub random: fx::Random,
 	pub tiles: &'static [render::TileGfx],
-	pub shadow_map: Option<Box<dyn shade::Texture2D>>,
-	pub light_matrix: Mat4f,
 }
 
 impl Default for FxEditState {
@@ -20,8 +18,6 @@ impl Default for FxEditState {
 			dt: 0.0,
 			random: fx::Random::default(),
 			tiles: &[],
-			shadow_map: None,
-			light_matrix: Mat4::IDENTITY,
 		}
 	}
 }
@@ -35,15 +31,9 @@ impl FxEditState {
 			dt: 0.0,
 			random: fx::Random::default(),
 			tiles,
-			shadow_map: None,
-			light_matrix: Mat4::IDENTITY,
 		});
 		fx.init_camera();
 		fx
-	}
-
-	pub fn shadow_map(&self) -> &dyn shade::Texture2D {
-		&**self.shadow_map.as_ref().expect("shadow map texture has not been created")
 	}
 
 	pub fn set_terrain(&mut self, pos: Vec2i, terrain: chipty::Terrain) {
@@ -109,7 +99,6 @@ impl FxEditState {
 		self.camera.animate_position(self.time, self.dt, resx.viewport.size());
 		self.camera.shake.update(self.dt, &mut self.random);
 
-		self.draw_shadow_map(g, resx);
 		let camera = self.camera.setup(resx.viewport.size());
 
 		g.begin(&shade::BeginArgs::Immediate {
@@ -118,7 +107,7 @@ impl FxEditState {
 			levels: None,
 			depth: Some(resx.backdepth()),
 		});
-		self.draw_field(g, resx, &camera, false);
+		self.draw_field(g, resx, &camera);
 		g.end();
 	}
 
@@ -135,73 +124,32 @@ impl FxEditState {
 		self.camera.bounds.maxs = Vec2(self.edit.width as f32 * 32.0, self.edit.height as f32 * 32.0);
 	}
 
-	fn draw_shadow_map(&mut self, g: &mut shade::Graphics, resx: &fx::Resources) {
-		const SIZE: i32 = 2048;
-		let info = shade::Texture2DInfo {
-			format: shade::TextureFormat::Depth24,
-			width: SIZE,
-			height: SIZE,
-			props: shade::TextureProps {
-				mip_levels: 1,
-				usage: shade::TextureUsage!(DEPTH_STENCIL_TARGET | SAMPLED),
-				filter_min: shade::TextureFilter::Nearest,
-				filter_mag: shade::TextureFilter::Nearest,
-				wrap_u: shade::TextureWrap::Edge,
-				wrap_v: shade::TextureWrap::Edge,
-				border_color: [1.0, 1.0, 1.0, 1.0],
-				..Default::default()
-			},
-		};
-		g.texture2d_ensure(&mut self.shadow_map, &info);
+	fn draw_field(&self, g: &mut shade::Graphics, resx: &fx::Resources, camera: &shade::d3::Camera) {
+		let mut cv = shade::im::DrawBuilder::<render::Vertex, render::Uniform>::new();
+		cv.depth_test = Some(shade::Compare::LessEqual);
+		cv.cull_mode = Some(shade::CullMode::CW);
+		cv.shader = Some(resx.shader.as_ref());
+		cv.uniform.transform = camera.view_proj;
+		cv.uniform.texture = resx.spritesheet_texture.as_ref();
+		cv.uniform.shadow_tint = Vec3::dup(1.0);
 
-		let viewport = cvmath::Bounds2!(0, 0, SIZE, SIZE);
-		let light_target = self.camera.target().vec3(0.0);
-		let light_pos = light_target + Vec3f::new(-300.0, 300.0, 300.0);
-		let view = cvmath::Transform3f::look_at(light_pos, light_target, -Vec3f::Y, Hand::LH);
-		let near = 10.0;
-		let far = 1000.0;
-		let projection = cvmath::Mat4f::ortho(-500.0, 500.0, -500.0, 500.0, near, far, (Hand::LH, Clip::NO));
-		let view_proj = projection * view;
-		self.light_matrix = view_proj;
-		let camera = shade::d3::Camera {
-			viewport,
-			aspect_ratio: 1.0,
-			position: light_pos,
-			view,
-			near,
-			far,
-			projection,
-			view_proj,
-			inv_view_proj: view_proj.inverse(),
-			clip: Clip::NO,
-		};
+		self.draw_tiles(&mut cv, resx, camera);
+		self.draw_terrain_overlays(&mut cv, resx, camera);
+		cv.draw(g);
 
-		g.begin(&shade::BeginArgs::Immediate {
-			color: &[],
-			levels: None,
-			depth: Some(self.shadow_map()),
-			viewport,
-		});
 		g.clear(&shade::ClearArgs {
 			depth: Some(1.0),
 			..Default::default()
 		});
-		self.draw_field(g, resx, &camera, true);
-		g.end();
-	}
 
-	fn draw_field(&self, g: &mut shade::Graphics, resx: &fx::Resources, camera: &shade::d3::Camera, shadow: bool) {
 		let mut cv = shade::im::DrawBuilder::<render::Vertex, render::Uniform>::new();
 		cv.depth_test = Some(shade::Compare::LessEqual);
 		cv.cull_mode = Some(shade::CullMode::CW);
-		cv.shader = Some(if shadow { resx.shader_shadowmap.as_ref() } else { resx.shader.as_ref() });
+		cv.shader = Some(resx.shader.as_ref());
 		cv.uniform.transform = camera.view_proj;
 		cv.uniform.texture = resx.spritesheet_texture.as_ref();
-		cv.uniform.shadow_map = self.shadow_map();
-		cv.uniform.light_matrix = self.light_matrix;
+		cv.uniform.shadow_tint = Vec3::dup(1.0);
 
-		self.draw_tiles(&mut cv, resx, camera);
-		self.draw_terrain_overlays(&mut cv, resx, camera);
 		self.draw_entities(&mut cv, resx, camera);
 		cv.draw(g);
 	}
@@ -238,7 +186,7 @@ impl FxEditState {
 	fn draw_entities(&self, cv: &mut shade::im::DrawBuilder<render::Vertex, render::Uniform>, resx: &fx::Resources, camera: &shade::d3::Camera) {
 		let mut entities: Vec<_> = self.edit.entities_in_order()
 			.map(|(_, args)| {
-				let pos = entity_pos(&self.edit, args);
+				let pos = entity_pos(args);
 				(pos, *args)
 			})
 			.collect();
@@ -247,7 +195,7 @@ impl FxEditState {
 		cv.blend_mode = shade::BlendMode::Alpha;
 		for (pos, args) in entities {
 			let sprite = sprite_for_entity_args(&self.edit, &args);
-			let model = if pos.z >= 20.0 { chipty::ModelId::FloorSprite } else { model_for_entity_kind(args.kind) };
+			let model = model_for_entity_kind(args.kind);
 			let frame = entity_frame(self.time, args.kind);
 			render::draw(cv, Some(camera), resx, pos, sprite, model, frame, 1.0);
 		}
@@ -268,7 +216,7 @@ pub fn draw_entity_order(fx: &FxEditState, g: &mut shade::Graphics, resx: &fx::R
 		..Default::default()
 	};
 	for (index, (_, args)) in fx.edit.entities_in_order().enumerate() {
-		let Some(pos) = camera.world_to_viewport(entity_pos(&fx.edit, args) + Vec3(16.0, 16.0, 0.0)) else { continue };
+		let Some(pos) = camera.world_to_viewport(entity_pos(args) + Vec3(16.0, 16.0, 0.0)) else { continue };
 		tbuf.text_box(&resx.font, &scribe, &cvmath::Bounds2::point(pos, Vec2::ZERO), shade::d2::TextAlign::MiddleCenter, &format!("{}", index));
 	}
 
@@ -318,16 +266,13 @@ fn entity_frame(time: f64, kind: chipty::EntityKind) -> u16 {
 	}
 }
 
-fn entity_pos(edit: &chipcore::EditState, args: &chipty::EntityArgs) -> Vec3f {
-	let terrain = edit.get_terrain(args.pos);
-	let elevated = matches!(terrain, chipty::Terrain::CloneMachine);
+fn entity_pos(args: &chipty::EntityArgs) -> Vec3f {
 	let base_z = match args.kind {
 		chipty::EntityKind::Socket => 2.0,
 		chipty::EntityKind::Thief => 1.0,
 		_ => 0.0,
 	};
-	let pos_z = if matches!(args.kind, chipty::EntityKind::Block | chipty::EntityKind::IceBlock) { 0.0 } else if elevated { 20.0 } else { base_z };
-	Vec3::new(args.pos.x as f32 * 32.0, args.pos.y as f32 * 32.0, pos_z)
+	Vec3::new(args.pos.x as f32 * 32.0, args.pos.y as f32 * 32.0, base_z)
 }
 
 fn model_for_entity_kind(kind: chipty::EntityKind) -> chipty::ModelId {
