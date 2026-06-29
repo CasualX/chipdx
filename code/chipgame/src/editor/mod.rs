@@ -29,7 +29,7 @@ pub struct EditorPlayStats {
 	pub bonks: i32,
 }
 
-static TERRAIN_SAMPLES: [[Terrain; 2]; 27] = [
+static TERRAIN_SAMPLES: [[Terrain; 2]; 28] = [
 	[Terrain::Blank, Terrain::Floor],
 	[Terrain::Dirt, Terrain::Gravel],
 	[Terrain::Wall, Terrain::CloneMachine],
@@ -45,6 +45,7 @@ static TERRAIN_SAMPLES: [[Terrain; 2]; 27] = [
 	[Terrain::ThinWallN, Terrain::ThinWallW],
 	[Terrain::ThinWallNW, Terrain::ThinWallNE],
 	[Terrain::ThinWallSW, Terrain::ThinWallSE],
+	[Terrain::ThinWallH, Terrain::ThinWallV],
 	[Terrain::Ice, Terrain::Ice],
 	[Terrain::IceNW, Terrain::IceNE],
 	[Terrain::IceSW, Terrain::IceSE],

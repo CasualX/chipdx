@@ -575,6 +575,8 @@ fn terrain_solid_flags(terrain: Terrain, flags: &SolidFlags) -> u8 {
 		Terrain::ThinWallNE => THIN_WALL_N | THIN_WALL_E,
 		Terrain::ThinWallSW => THIN_WALL_S | THIN_WALL_W,
 		Terrain::ThinWallSE => THIN_WALL_S | THIN_WALL_E,
+		Terrain::ThinWallH => THIN_WALL_N | THIN_WALL_S,
+		Terrain::ThinWallV => THIN_WALL_W | THIN_WALL_E,
 		Terrain::HiddenWall => SOLID_WALL,
 		Terrain::InvisibleWall => SOLID_WALL,
 		Terrain::RealBlueWall => SOLID_WALL,

@@ -1,6 +1,6 @@
 use super::*;
 
-pub static TILES: [render::TileGfx; 53] = [
+pub static TILES: [render::TileGfx; 55] = [
 	render::TileGfx { sprite: chipty::SpriteId::Blank, model: chipty::ModelId::Empty }, // Terrain::Blank
 	render::TileGfx { sprite: chipty::SpriteId::Floor, model: chipty::ModelId::Floor }, // Terrain::Floor
 	render::TileGfx { sprite: chipty::SpriteId::Wall, model: chipty::ModelId::Wall }, // Terrain::Wall
@@ -43,6 +43,8 @@ pub static TILES: [render::TileGfx; 53] = [
 	render::TileGfx { sprite: chipty::SpriteId::ThinWallNE, model: chipty::ModelId::Floor }, // Terrain::ThinWallNE
 	render::TileGfx { sprite: chipty::SpriteId::ThinWallSW, model: chipty::ModelId::Floor }, // Terrain::ThinWallSW
 	render::TileGfx { sprite: chipty::SpriteId::ThinWallSE, model: chipty::ModelId::Floor }, // Terrain::ThinWallSE
+	render::TileGfx { sprite: chipty::SpriteId::ThinWallH, model: chipty::ModelId::Floor }, // Terrain::ThinWallH
+	render::TileGfx { sprite: chipty::SpriteId::ThinWallV, model: chipty::ModelId::Floor }, // Terrain::ThinWallV
 	render::TileGfx { sprite: chipty::SpriteId::HiddenWall, model: chipty::ModelId::Wall }, // Terrain::HiddenWall
 	render::TileGfx { sprite: chipty::SpriteId::InvisibleWall, model: chipty::ModelId::Wall }, // Terrain::InvisibleWall
 	render::TileGfx { sprite: chipty::SpriteId::RealBlueWall, model: chipty::ModelId::Wall }, // Terrain::RealBlueWall

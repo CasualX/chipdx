@@ -277,7 +277,7 @@ impl<'a> pupil::Env for ExprContext<'a> {
 			"Ice" => count_terrain(self.level, &[chipty::Terrain::Ice, chipty::Terrain::IceNE, chipty::Terrain::IceNW, chipty::Terrain::IceSE, chipty::Terrain::IceSW]),
 			"ForceFloor" => count_terrain(self.level, &[chipty::Terrain::ForceE, chipty::Terrain::ForceN, chipty::Terrain::ForceS, chipty::Terrain::ForceW, chipty::Terrain::ForceRandom]),
 			"CloneBlock" => count_terrain(self.level, &[chipty::Terrain::CloneBlockE, chipty::Terrain::CloneBlockN, chipty::Terrain::CloneBlockS, chipty::Terrain::CloneBlockW]),
-			"ThinWall" => count_terrain(self.level, &[chipty::Terrain::ThinWallE, chipty::Terrain::ThinWallN, chipty::Terrain::ThinWallS, chipty::Terrain::ThinWallW, chipty::Terrain::ThinWallNW, chipty::Terrain::ThinWallNE, chipty::Terrain::ThinWallSW, chipty::Terrain::ThinWallSE]),
+			"ThinWall" => count_terrain(self.level, &[chipty::Terrain::ThinWallE, chipty::Terrain::ThinWallN, chipty::Terrain::ThinWallS, chipty::Terrain::ThinWallW, chipty::Terrain::ThinWallNW, chipty::Terrain::ThinWallNE, chipty::Terrain::ThinWallSW, chipty::Terrain::ThinWallSE, chipty::Terrain::ThinWallH, chipty::Terrain::ThinWallV]),
 			_ => {
 				if let Some(pattern) = name.strip_prefix("PatternSeq:") {
 					return count_patterns_seq(self.level, pattern);

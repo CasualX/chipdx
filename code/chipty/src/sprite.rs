@@ -47,6 +47,8 @@ pub enum SpriteId {
 	ThinWallNE,
 	ThinWallSW,
 	ThinWallSE,
+	ThinWallH,
+	ThinWallV,
 	Flippers,
 	FireBoots,
 	IceSkates,
