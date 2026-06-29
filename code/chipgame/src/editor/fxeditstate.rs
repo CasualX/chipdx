@@ -176,7 +176,6 @@ impl FxEditState {
 				match self.edit.get_terrain(pos) {
 					chipty::Terrain::Fire => render::draw(cv, Some(camera), resx, world_pos - Vec3(0.0, 2.0, 0.0), chipty::SpriteId::FireA, chipty::ModelId::Sprite, anim_loop_frame(self.time, 8.0), 1.0),
 					chipty::Terrain::WaterHazard => render::draw(cv, Some(camera), resx, world_pos, chipty::SpriteId::WaterHazard, chipty::ModelId::Sprite, 0, 1.0),
-					chipty::Terrain::BearTrap => render::draw(cv, Some(camera), resx, world_pos, chipty::SpriteId::BearTrapActiveA, chipty::ModelId::Sprite, anim_seq_frame(self.time, 20.0, 5), 1.0),
 					_ => {}
 				}
 			}

@@ -268,8 +268,8 @@ impl FxState {
 		self.camera.shake.update(ctx.dt, &mut self.random);
 		self.render.update(&ctx);
 
-		self.draw_shadow_map(g, resx);
 		let camera = self.camera.setup(resx.viewport.size());
+		self.draw_shadow_map(g, resx, &camera);
 		let vision_clip = self.camera.vision_clip();
 		self.render.draw(g, resx, &camera, time, vision_clip);
 
@@ -282,6 +282,10 @@ impl FxState {
 			});
 			self.render_ui(g, resx, time);
 			g.end();
+		}
+
+		if false {
+			self.draw_shadow_map_debug(g, resx);
 		}
 	}
 
@@ -407,7 +411,7 @@ impl FxState {
 		self.scout_speed = 0.0;
 	}
 
-	fn draw_shadow_map(&mut self, g: &mut shade::Graphics, resx: &Resources) {
+	fn draw_shadow_map(&mut self, g: &mut shade::Graphics, resx: &Resources, scene_camera: &shade::d3::Camera) {
 		const SIZE: i32 = 2048;
 		let info = shade::Texture2DInfo {
 			format: shade::TextureFormat::Depth24,
@@ -426,29 +430,9 @@ impl FxState {
 		};
 		g.texture2d_ensure(&mut self.render.shadow_map, &info);
 
-		let viewport = cvmath::Bounds2!(0, 0, SIZE, SIZE);
-
-		let light_target = self.camera.target().vec3(0.0);
-		let light_pos = light_target + Vec3f::new(-300.0, 300.0, 300.0);
-		let view = cvmath::Transform3f::look_at(light_pos, light_target, -Vec3f::Y, Hand::LH);
-		let near = 10.0;
-		let far = 1000.0;
-		let projection = cvmath::Mat4f::ortho(-500.0, 500.0, -500.0, 500.0, near, far, (Hand::LH, Clip::NO));
-		let view_proj = projection * view;
-		self.render.light_matrix = view_proj;
-		let inv_view_proj = view_proj.inverse();
-		let camera = shade::d3::Camera {
-			viewport,
-			aspect_ratio: 1.0,
-			position: light_pos,
-			view,
-			near,
-			far,
-			projection,
-			view_proj,
-			inv_view_proj,
-			clip: Clip::NO,
-		};
+		let viewport = Bounds2!(0, 0, SIZE, SIZE);
+		let camera = self.shadow_camera(viewport, scene_camera);
+		self.render.light_matrix = camera.view_proj;
 
 		g.begin(&shade::BeginArgs::Immediate {
 			color: &[],
@@ -463,6 +447,90 @@ impl FxState {
 		let vision_clip = self.camera.vision_clip();
 		self.render.draw_field(g, resx, &camera, self.time, true, vision_clip);
 		g.end();
+	}
+
+	fn draw_shadow_map_debug(&self, g: &mut shade::Graphics, resx: &Resources) {
+		let margin = 16.0;
+		let size = (resx.viewport.width().min(resx.viewport.height()) as f32 * 0.45).clamp(128.0, 512.0);
+		let rect = Bounds2!(margin, margin, margin + size, margin + size);
+		let color = Vec4(255, 255, 255, 255);
+		let sprite = shade::d2::Sprite {
+			bottom_left: shade::d2::TexturedTemplate { uv: Vec2(0.0, 0.0), color },
+			top_left: shade::d2::TexturedTemplate { uv: Vec2(0.0, 1.0), color },
+			top_right: shade::d2::TexturedTemplate { uv: Vec2(1.0, 1.0), color },
+			bottom_right: shade::d2::TexturedTemplate { uv: Vec2(1.0, 0.0), color },
+		};
+
+		g.begin(&shade::BeginArgs::Immediate {
+			viewport: resx.viewport,
+			color: &[resx.backcolor()],
+			levels: None,
+			depth: None,
+		});
+		let mut cv = shade::d2::TexturedBuffer::new();
+		cv.blend_mode = shade::BlendMode::Solid;
+		cv.shader = Some(resx.shader2d_pixelart.as_ref());
+		cv.uniform.transform = Transform2f::ortho(resx.viewport.cast());
+		cv.uniform.texture = self.render.shadow_map();
+		cv.sprite_rect(&sprite, &rect);
+		cv.draw(g);
+		g.end();
+	}
+
+	fn shadow_camera(&self, shadow_viewport: Bounds2i, scene_camera: &shade::d3::Camera) -> shade::d3::Camera {
+		const XY_PADDING: f32 = 64.0;
+		const Z_PADDING: f32 = 256.0;
+		const CAST_HEIGHT: f32 = 128.0;
+
+		let light_target = self.camera.target().vec3(0.0);
+		let light_pos = light_target + Vec3f(-300.0, 300.0, 300.0);
+		let view = Transform3f::look_at(light_pos, light_target, -Vec3f::Y, Hand::LH);
+
+		let scene_viewport = scene_camera.viewport;
+		let corners = [
+			scene_viewport.top_left(),
+			scene_viewport.top_right(),
+			scene_viewport.bottom_left(),
+			scene_viewport.bottom_right(),
+		];
+		let ground = Plane3::new(Vec3::Z, 0.0);
+		let ground_points = corners.map(|corner| {
+			let ray = scene_camera.viewport_to_ray(corner);
+			ray.trace(&ground).map(|hit| hit.point.xy())
+		});
+
+		let mut light_bounds = Bounds3f::EMPTY;
+		let mut point_count = 0;
+		for point in ground_points.into_iter().filter_map(|point| point) {
+			light_bounds = light_bounds.include(view * point.vec3(0.0));
+			light_bounds = light_bounds.include(view * point.vec3(CAST_HEIGHT));
+			point_count += 1;
+		}
+
+		if point_count == 0 {
+			let point = self.camera.target();
+			light_bounds = light_bounds.include(view * point.vec3(0.0));
+			light_bounds = light_bounds.include(view * point.vec3(CAST_HEIGHT));
+		}
+
+		let light_bounds = light_bounds.inflate(Vec3(XY_PADDING, XY_PADDING, Z_PADDING));
+		let near = light_bounds.mins.z;
+		let far = light_bounds.maxs.z;
+		let projection = Transform3f::ortho(light_bounds, (Hand::LH, Clip::NO));
+		let view_proj = projection * view;
+		let inv_view_proj = view_proj.inverse();
+		shade::d3::Camera {
+			viewport: shadow_viewport,
+			aspect_ratio: 1.0,
+			position: light_pos,
+			view,
+			near,
+			far,
+			projection: projection.into(),
+			view_proj: view_proj.into(),
+			inv_view_proj: inv_view_proj.into(),
+			clip: Clip::NO,
+		}
 	}
 }
 
@@ -501,7 +569,7 @@ pub fn draw_entity_order(fx: &FxState, g: &mut shade::Graphics, resx: &Resources
 	tbuf.shader = Some(&*resx.font.shader);
 	tbuf.blend_mode = shade::BlendMode::Alpha;
 	tbuf.uniform.texture = &*resx.font.texture;
-	tbuf.uniform.transform = cvmath::Transform2::ortho(resx.viewport.cast());
+	tbuf.uniform.transform = Transform2::ortho(resx.viewport.cast());
 
 	let size = resx.viewport.height() as f32 / 32.0;
 	let scribe = shade::d2::Scribe {
@@ -513,7 +581,7 @@ pub fn draw_entity_order(fx: &FxState, g: &mut shade::Graphics, resx: &Resources
 		let Some(index) = ehandle.index() else { continue };
 		let Some(obj) = fx.render.objects.get(obj_handle) else { continue };
 		let Some(pos) = camera.world_to_viewport(obj.data.pos + Vec3(16.0, 16.0, 0.0)) else { continue };
-		tbuf.text_box(&resx.font, &scribe, &cvmath::Bounds2::point(pos, Vec2::ZERO), shade::d2::TextAlign::MiddleCenter, &format!("{}", index));
+		tbuf.text_box(&resx.font, &scribe, &Bounds2::point(pos, Vec2::ZERO), shade::d2::TextAlign::MiddleCenter, &format!("{}", index));
 	}
 
 	tbuf.draw(g);
