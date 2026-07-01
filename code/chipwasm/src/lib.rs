@@ -280,6 +280,7 @@ pub extern "C" fn drawInstance(instance: *mut Instance, time: f64, width: i32, h
 	instance.resx.update_back(g);
 	instance.play.draw(g, &instance.resx, time);
 	instance.resx.present(g, time);
+	instance.play.metrics = g.get_draw_metrics(true);
 }
 
 #[no_mangle]
