@@ -184,7 +184,8 @@ impl PlayCamera {
 		let position = position + corr;
 		let target = target + corr;
 		let view = Transform3f::look_at(position, target, -Vec3f::Y, Hand::LH);
-		let projection = Mat4::blend_ortho_perspective(self.blend.blend, focus_depth, fov_y, aspect_ratio, NEAR, FAR, (Hand::LH, Clip::NO));
+		let blend = cvmath::scalar::smootherstep(0.0, 1.0, self.blend.blend);
+		let projection = Mat4::blend_ortho_perspective(blend, focus_depth, fov_y, aspect_ratio, NEAR, FAR, (Hand::LH, Clip::NO));
 		let view_proj = projection * view;
 		let inv_view_proj = view_proj.inverse();
 		shade::d3::Camera {
