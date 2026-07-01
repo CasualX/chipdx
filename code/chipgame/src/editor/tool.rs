@@ -52,6 +52,17 @@ impl ToolState {
 		}
 	}
 
+	pub fn cancel_left_click(&mut self, s: &mut EditorEditState) {
+		match self {
+			ToolState::Terrain(state) => state.cancel_left_click(s),
+			ToolState::Entity(state) => state.cancel_left_click(s),
+			ToolState::Connection(state) => state.cancel_left_click(s),
+			ToolState::IcePath(state) => state.cancel_left_click(s),
+			ToolState::ForcePath(state) => state.cancel_left_click(s),
+			ToolState::EntOrder(state) => state.cancel_left_click(s),
+		}
+	}
+
 	pub fn right_click(&mut self, s: &mut EditorEditState, pressed: bool) {
 		match self {
 			ToolState::Terrain(state) => state.right_click(s, pressed),

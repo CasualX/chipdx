@@ -47,7 +47,7 @@
 				<span id="display-mode-cta-icon" aria-hidden="true">⛶</span>
 				<span>Fullscreen</span>
 			</button>
-			<input id="levelset-file-input" x-ref="levelSetFileInput" type="file" accept=".dat,.ccl,application/octet-stream" @change="loadLocalLevelSet($event)" />
+			<input id="levelset-file-input" x-ref="levelSetFileInput" type="file" accept=".dat,.ccl,application/octet-stream" @change="loadLocalPlayLevelSet($event)" />
 			<div id="levelset-file-prompt" x-cloak x-show="levelSetFilePromptVisible" @click.self="levelSetFilePromptVisible = false">
 				<button type="button" @click="$refs.levelSetFileInput.click()">Choose Levelset File</button>
 			</div>

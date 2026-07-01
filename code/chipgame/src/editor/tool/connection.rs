@@ -19,6 +19,9 @@ impl ConnectionToolState {
 		}
 	}
 
+	pub fn cancel_left_click(&mut self, _s: &mut EditorEditState) {
+	}
+
 	pub fn right_click(&mut self, _s: &mut EditorEditState, _pressed: bool) {
 	}
 

@@ -493,7 +493,7 @@ window.chipGame = function chipGame() {
 			return displayName || "Local Levelset";
 		},
 
-		async loadLocalLevelSet(event) {
+		async loadLocalPlayLevelSet(event) {
 			const input = event.target;
 			const file = input.files && input.files[0];
 			input.value = "";
@@ -506,7 +506,7 @@ window.chipGame = function chipGame() {
 				const name = this.allocWasmBytes(nameBytes);
 				try {
 					this.lastWasmError = null;
-					const result = this.wasmExports.loadLocalLevelSet(this.wasmGamePtr, data.ptr, data.len, name.ptr, name.len);
+					const result = this.wasmExports.loadLocalPlayLevelSet(this.wasmGamePtr, data.ptr, data.len, name.ptr, name.len);
 					if (this.lastWasmError instanceof Error) {
 						throw this.lastWasmError;
 					}
@@ -835,7 +835,7 @@ window.chipGame = function chipGame() {
 					const payloadBytes = encoder.encode(customLevelPayload.value);
 					const payload = allocWasmBytes(payloadBytes);
 					try {
-						gamePtr = exports.createCustomLevel(payload.ptr, payload.len, customLevelPayload.compressed);
+						gamePtr = exports.createCustomPlayLevel(payload.ptr, payload.len, customLevelPayload.compressed);
 					}
 					finally {
 						exports.freeBytes(payload.ptr, payload.capacity);
@@ -845,15 +845,15 @@ window.chipGame = function chipGame() {
 					}
 				}
 				else {
-					gamePtr = exports.createInstance();
+					gamePtr = exports.createPlayInstance();
 				}
 			}
 			catch (err) {
 				const message = err && err.message ? err.message : String(err);
-				throw new Error(`${customLevelPayload !== null ? "custom level boot" : "createInstance()"} trapped: ${message}`);
+				throw new Error(`${customLevelPayload !== null ? "createCustomPlayLevel()" : "createPlayInstance()"} trapped: ${message}`);
 			}
 			if (!gamePtr) {
-				const label = customLevelPayload === null ? "createInstance()" : "createCustomLevel()";
+				const label = customLevelPayload === null ? "createPlayInstance()" : "createCustomPlayLevel()";
 				throw new Error(`${label} returned null (0) instance pointer`);
 			}
 			this.wasmGamePtr = gamePtr;
@@ -893,10 +893,10 @@ window.chipGame = function chipGame() {
 				const buttons = this.getButtonsBitmask();
 				while (acc >= stepMs) {
 					try {
-						exports.thinkInstance(gamePtr, buttons);
+						exports.thinkPlayInstance(gamePtr, buttons);
 					}
 					catch (err) {
-						this.setLoadingStatus(`thinkInstance() trapped: ${err && err.message ? err.message : String(err)}`);
+						this.setLoadingStatus(`thinkPlayInstance() trapped: ${err && err.message ? err.message : String(err)}`);
 						return;
 					}
 					thinkCount++;
@@ -905,10 +905,10 @@ window.chipGame = function chipGame() {
 
 				const { width, height } = this.resizeCanvasToDisplaySize();
 				try {
-					exports.drawInstance(gamePtr, now / 1000.0, width, height);
+					exports.drawPlayInstance(gamePtr, now / 1000.0, width, height);
 				}
 				catch (err) {
-					this.setLoadingStatus(`drawInstance() trapped: ${err && err.message ? err.message : String(err)}`);
+					this.setLoadingStatus(`drawPlayInstance() trapped: ${err && err.message ? err.message : String(err)}`);
 					return;
 				}
 				drawCount++;
@@ -936,7 +936,7 @@ window.chipGame = function chipGame() {
 						this.frameHandle = 0;
 					}
 					try {
-						exports.destroyInstance(gamePtr);
+						exports.destroyPlayInstance(gamePtr);
 					}
 					catch {
 						// ignore

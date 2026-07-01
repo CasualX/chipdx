@@ -50,6 +50,10 @@ impl EntityToolState {
 		}
 	}
 
+	pub fn cancel_left_click(&mut self, _s: &mut EditorEditState) {
+		self.selected_ent = None;
+	}
+
 	pub fn think(&mut self, _s: &mut EditorEditState) {
 	}
 

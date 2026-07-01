@@ -26,6 +26,9 @@ impl TerrainToolState {
 		}
 	}
 
+	pub fn cancel_left_click(&mut self, _s: &mut EditorEditState) {
+	}
+
 	pub fn right_click(&mut self, s: &mut EditorEditState, pressed: bool) {
 		if pressed {
 			s.sample();

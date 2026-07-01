@@ -102,6 +102,26 @@ impl EditorEditState {
 	pub fn zoom_out(&mut self) {
 		self.fx.camera.zoom_by(ZOOM_STEP, ZOOM_MIN, ZOOM_MAX);
 	}
+	pub fn pan_view(&mut self, delta: Vec2f) {
+		if delta == Vec2f::ZERO {
+			return;
+		}
+		let cam = self.fx.camera.setup(self.screen_size);
+		let center = self.screen_size / 2;
+		let next = Vec2i(
+			(center.x as f32 + delta.x).round() as i32,
+			(center.y as f32 + delta.y).round() as i32,
+		);
+		let old_ray = cam.viewport_to_ray(center);
+		let new_ray = cam.viewport_to_ray(next);
+		let plane = Plane3::new(Vec3::Z, 0.0);
+		let (Some(old_hit), Some(new_hit)) = (old_ray.trace(&plane), new_ray.trace(&plane)) else {
+			return;
+		};
+		let old_pos = old_ray.at(old_hit.distance);
+		let new_pos = new_ray.at(new_hit.distance);
+		self.fx.camera.pan_free_roam(old_pos.xy() - new_pos.xy(), self.fx.time);
+	}
 	pub fn think(&mut self) {
 	}
 	pub fn draw(&mut self, g: &mut shade::Graphics, resx: &fx::Resources, time: f64) {
@@ -319,6 +339,17 @@ impl EditorEditState {
 		}
 
 		self.input.left_click = pressed;
+	}
+	pub fn cancel_left_click(&mut self) {
+		if let Some(mut tool_state) = self.tool.take() {
+			tool_state.cancel_left_click(self);
+			if self.tool.is_none() {
+				self.tool = Some(tool_state);
+			}
+		}
+
+		self.input.left_click = false;
+		self.push_history();
 	}
 	pub fn right_click(&mut self, pressed: bool) {
 		if let Some(mut tool_state) = self.tool.take() {

@@ -20,6 +20,11 @@ impl ForcePathToolState {
 		s.input.left_click = pressed;
 	}
 
+	pub fn cancel_left_click(&mut self, s: &mut EditorEditState) {
+		self.last_pos = None;
+		s.input.left_click = false;
+	}
+
 	pub fn right_click(&mut self, s: &mut EditorEditState, pressed: bool) {
 		if pressed {
 			s.sample();

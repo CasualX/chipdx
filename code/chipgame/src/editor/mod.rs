@@ -29,7 +29,7 @@ pub struct EditorPlayStats {
 	pub bonks: i32,
 }
 
-static TERRAIN_SAMPLES: [[Terrain; 2]; 28] = [
+static TERRAIN_SAMPLES: [[Terrain; 2]; 27] = [
 	[Terrain::Blank, Terrain::Floor],
 	[Terrain::Dirt, Terrain::Gravel],
 	[Terrain::Wall, Terrain::CloneMachine],
@@ -38,7 +38,6 @@ static TERRAIN_SAMPLES: [[Terrain; 2]; 28] = [
 	[Terrain::BlueLock, Terrain::RedLock],
 	[Terrain::GreenLock, Terrain::YellowLock],
 	[Terrain::Exit, Terrain::Hint],
-	[Terrain::FakeExit, Terrain::Socket],
 	[Terrain::Water, Terrain::Fire],
 	[Terrain::WaterHazard, Terrain::DirtBlock],
 	[Terrain::ThinWallE, Terrain::ThinWallS],
@@ -110,6 +109,10 @@ impl Default for EditorState {
 }
 
 impl EditorState {
+	pub fn is_playing(&self) -> bool {
+		matches!(self, EditorState::Play(_))
+	}
+
 	pub fn load_level(&mut self, json: &str) {
 		match self {
 			EditorState::Edit(s) => s.load_level(json),
@@ -179,6 +182,12 @@ impl EditorState {
 	pub fn zoom_out(&mut self) {
 		match self {
 			EditorState::Edit(s) => s.zoom_out(),
+			EditorState::Play(_) => {},
+		}
+	}
+	pub fn pan_view(&mut self, delta_x: f32, delta_y: f32) {
+		match self {
+			EditorState::Edit(s) => s.pan_view(Vec2f(delta_x, delta_y)),
 			EditorState::Play(_) => {},
 		}
 	}
@@ -340,6 +349,12 @@ impl EditorState {
 	pub fn left_click(&mut self, pressed: bool) {
 		match self {
 			EditorState::Edit(s) => s.left_click(pressed),
+			EditorState::Play(_) => {},
+		}
+	}
+	pub fn cancel_left_click(&mut self) {
+		match self {
+			EditorState::Edit(s) => s.cancel_left_click(),
 			EditorState::Play(_) => {},
 		}
 	}

@@ -9,4 +9,5 @@ cd "$repo_root"
 
 cargo build --release -p chipwasm --target=wasm32-unknown-unknown
 
-cp target/wasm32-unknown-unknown/release/chipwasm.wasm code/chiphtml/chipwasm.wasm
+mkdir -p code/chiphtml/public
+cp target/wasm32-unknown-unknown/release/chipwasm.wasm code/chiphtml/public/chipwasm.wasm
