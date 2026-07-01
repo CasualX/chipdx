@@ -57,9 +57,15 @@ impl AppStuff {
 			.with_title("ChipEdit")
 			.with_inner_size(size);
 
+		fn config_picker(configs: impl Iterator<Item = glutin::config::Config>) -> Option<glutin::config::Config> {
+			configs
+				.filter(|c| c.srgb_capable())
+				.max_by_key(|c| c.num_samples())
+		}
+
 		let (window, gl_config) = glutin_winit::DisplayBuilder::new()
 			.with_window_attributes(Some(window_attributes))
-			.build(event_loop, template, |configs| configs.max_by_key(|c| c.num_samples()).unwrap())
+			.build(event_loop, template, |configs| config_picker(configs).expect("No suitable GL config found"))
 			.expect("Failed to build window and GL config");
 
 		let window = window.expect("DisplayBuilder did not build a Window");
@@ -156,6 +162,9 @@ fn init_audio(fs: &FileSystem, config: &chipgame::config::Config) -> Option<audi
 }
 
 fn main() {
+	#[cfg(all(windows, debug_assertions))]
+	eprintln!("Warning: Windows debug build may slow down from print spam. Run with 2>NUL to suppress.");
+
 	let time_base = time::Instant::now();
 
 	// CLI: optional level path
