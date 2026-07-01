@@ -20,7 +20,8 @@ pub(super) fn update_hidden_flag(s: &mut GameState, ent: &mut Entity) {
 	let terrain = s.field.get_terrain(ent.pos);
 	if matches!(terrain,
 		| Terrain::Wall | Terrain::BlueLock | Terrain::RedLock | Terrain::GreenLock | Terrain::YellowLock
-		| Terrain::DirtBlock | Terrain::ToggleWall | Terrain::RealBlueWall | Terrain::FakeBlueWall
+		| Terrain::DirtBlock | Terrain::ToggleWall | Terrain::HiddenWall | Terrain::InvisibleWall
+		| Terrain::RealBlueWall | Terrain::FakeBlueWall
 	) {
 		hidden = true;
 	}
