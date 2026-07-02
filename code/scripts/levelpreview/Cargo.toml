@@ -1,0 +1,13 @@
+[package]
+name = "levelpreview"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chipdat = { path = "../../chipdat" }
+chipty = { path = "../../chipty" }
+clap.workspace = true
+cvmath.workspace = true
+paks.workspace = true
+serde_json.workspace = true
+shade.workspace = true

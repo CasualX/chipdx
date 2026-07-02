@@ -64,7 +64,7 @@ fn main() {
 		let draw_x = x + GUTTER;
 		let draw_y = y + GUTTER;
 		let gutter_mode = frame.gutter.into();
-		sheet.copy_with_gutter(&frame.image, Point2i(draw_x, draw_y), GUTTER, gutter_mode);
+		sheet.copy_with_gutter(Point2i(draw_x, draw_y), &frame.image, GUTTER, gutter_mode);
 		let rect = [draw_x, draw_y, frame.image.width, frame.image.height];
 		frame_lookup.insert(frame.file.clone(), rect);
 		packed_frames += 1;
@@ -77,7 +77,7 @@ fn main() {
 			let rect = frame_lookup.get(path)
 				.unwrap_or_else(|| panic!("frame {} missing from packed sheet", path));
 			let frame = shade::atlas::Frame {
-				rect: shade::atlas::Rect(rect[0], rect[1], rect[2], rect[3]),
+				rect: cvmath::Recti(rect[0], rect[1], rect[2], rect[3]),
 				margin: GUTTER,
 				transform: sprite.transform,
 				origin: sprite_origin(path),

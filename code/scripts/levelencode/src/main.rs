@@ -6,6 +6,7 @@ fn main() {
 		.arg(clap::arg!(--json <JSON_PATH> "Path to a level JSON file").value_parser(clap::value_parser!(path::PathBuf)))
 		.arg(clap::arg!(--paks <PAKS_PATH> "Path to a packed levelset .paks").value_parser(clap::value_parser!(path::PathBuf)))
 		.arg(clap::arg!(--dat <DAT_PATH> "Path to a levelset .dat").value_parser(clap::value_parser!(path::PathBuf)))
+		.arg(clap::arg!(-k --key [KEY] "Packed levelset encryption key"))
 		.arg(clap::arg!([LEVEL] "Level number (1-based) or case-insensitive level name substring"))
 		.get_matches();
 
@@ -25,7 +26,10 @@ fn main() {
 			let Some(selector) = selector else {
 				fail("missing LEVEL number or name for --paks");
 			};
-			load_level_paks(path, selector)
+			let key = matches.get_one::<String>("key")
+				.map(|s| paks::parse_key(s).unwrap_or_else(|err| panic!("invalid key: {err}")))
+				.unwrap_or_default();
+			load_level_paks(path, &key, selector)
 		}
 		(None, None, Some(path)) => {
 			let Some(selector) = selector else {
@@ -72,11 +76,10 @@ fn load_level_json(path: &path::Path) -> chipty::LevelDto {
 	}
 }
 
-fn load_level_paks(path: &path::Path, selector: &str) -> chipty::LevelDto {
-	let key = paks::Key::default();
-	let reader = paks::FileReader::open(path, &key).unwrap_or_else(|err| panic!("open {}: {err}", path.display()));
+fn load_level_paks(path: &path::Path, key: &paks::Key, selector: &str) -> chipty::LevelDto {
+	let reader = paks::FileReader::open(path, key).unwrap_or_else(|err| panic!("open {}: {err}", path.display()));
 	let desc = reader.find_file(b"index.json").unwrap_or_else(|| panic!("{} does not contain index.json", path.display()));
-	let data = reader.read_data(desc, &key).unwrap_or_else(|err| panic!("read index.json from {}: {err}", path.display()));
+	let data = reader.read_data(desc, key).unwrap_or_else(|err| panic!("read index.json from {}: {err}", path.display()));
 	let index_data = chipty::decompress(&data);
 	let levelset: chipty::LevelSetDto = serde_json::from_slice(&index_data).unwrap_or_else(|err| panic!("parse index.json from {}: {err}", path.display()));
 	select_level(&levelset, path, selector)

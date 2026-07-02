@@ -17,6 +17,7 @@ members = [
 	"./code/scripts/fixlevel",
 	"./code/scripts/levelencode",
 	"./code/scripts/levelquery",
+	"./code/scripts/levelpreview",
 	"./code/scripts/packset",
 	"./code/scripts/playground",
 	"./code/scripts/publish",
