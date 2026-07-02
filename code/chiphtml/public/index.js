@@ -193,12 +193,14 @@ window.chipGame = function chipGame() {
 		},
 
 		getCustomLevelPayload() {
-			const params = new URLSearchParams(window.location.search);
-			const compressed = params.get("levelc");
+			const hash = window.location.hash.startsWith("#?") ? window.location.hash.slice(2) : "";
+			const hashParams = new URLSearchParams(hash);
+			const searchParams = new URLSearchParams(window.location.search);
+			const compressed = hashParams.get("levelc") ?? searchParams.get("levelc");
 			if (compressed !== null) {
 				return { value: compressed, compressed: true };
 			}
-			const plain = params.get("level");
+			const plain = hashParams.get("level") ?? searchParams.get("level");
 			if (plain !== null) {
 				return { value: plain, compressed: false };
 			}

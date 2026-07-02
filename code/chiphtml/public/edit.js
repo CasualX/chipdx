@@ -1074,7 +1074,7 @@ window.chipEditor = function chipEditor() {
 			const playUrl = new URL("./", window.location.href);
 			playUrl.search = "";
 			playUrl.hash = "";
-			playUrl.searchParams.set("levelc", payload);
+			playUrl.hash = `?levelc=${payload}`;
 			return playUrl.toString();
 		},
 

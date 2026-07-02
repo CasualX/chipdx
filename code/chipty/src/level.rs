@@ -6,6 +6,7 @@ pub const FIELD_MIN_HEIGHT: i32 = 3;
 pub const FIELD_MAX_HEIGHT: i32 = 255;
 
 /// Level map data transfer object.
+#[derive(Clone, Debug)]
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct FieldDto {
 	pub width: i32,
@@ -49,7 +50,7 @@ impl Trophy {
 	}
 }
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct TrophyValues {
 	pub author: i32,
@@ -58,14 +59,15 @@ pub struct TrophyValues {
 	pub bronze: i32,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Trophies {
 	pub ticks: TrophyValues,
 	pub steps: TrophyValues,
 }
 
 /// Level data transfer object.
+#[derive(Clone, Debug)]
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct LevelDto {
 	pub name: String,
@@ -141,8 +143,8 @@ fn sort_entities(entities: &mut Vec<EntityArgs>) {
 /// * A red button and associated clone machine terrain.
 /// * A brown button and associated bear trap terrain.
 /// * A teleport pad and destination terrain.
-#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Hash)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct FieldConn {
 	pub src: Vec2i,
 	pub dest: Vec2i,

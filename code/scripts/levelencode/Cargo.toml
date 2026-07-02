@@ -5,5 +5,7 @@ edition = "2021"
 
 [dependencies]
 clap.workspace = true
+chipdat = { path = "../../chipdat" }
 chipty = { path = "../../chipty" }
+paks.workspace = true
 serde_json.workspace = true
