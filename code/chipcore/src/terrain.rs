@@ -36,34 +36,38 @@ pub fn green_button(s: &mut GameState, phase: &mut TerrainPhase, ent: &mut Entit
 }
 
 pub fn red_button(s: &mut GameState, phase: &mut TerrainPhase, ent: &mut Entity) {
-	let Some(conn) = s.field.find_conn_by_src(ent.pos) else { return };
-
-	// Handle CloneBlock tiles separately
-	let clone_block_dir = match s.field.get_terrain(conn.dest) {
-		Terrain::CloneBlockN => Some(Compass::Up),
-		Terrain::CloneBlockW => Some(Compass::Left),
-		Terrain::CloneBlockS => Some(Compass::Down),
-		Terrain::CloneBlockE => Some(Compass::Right),
-		_ => None,
-	};
-
-	// Spawn a new entity
-	let args = if let Some(clone_block_dir) = clone_block_dir {
-		EntityArgs {
-			kind: EntityKind::Block,
-			pos: conn.dest,
-			face_dir: Some(clone_block_dir),
+	for conn in &s.field.conns {
+		if conn.src != ent.pos {
+			continue;
 		}
-	}
-	else {
-		// Find the template entity connected to the red button
-		let Some(&template) = s.templates.get(&conn.dest) else { return };
-		template
-	};
-	phase.spawns.push(args);
 
-	if is_button_press_audible(ent) {
-		s.events.fire(GameEvent::SoundFx { sound: SoundFx::ButtonPressed });
+		// Handle CloneBlock tiles separately
+		let clone_block_dir = match s.field.get_terrain(conn.dest) {
+			Terrain::CloneBlockN => Some(Compass::Up),
+			Terrain::CloneBlockW => Some(Compass::Left),
+			Terrain::CloneBlockS => Some(Compass::Down),
+			Terrain::CloneBlockE => Some(Compass::Right),
+			_ => None,
+		};
+
+		// Spawn a new entity
+		let args = if let Some(clone_block_dir) = clone_block_dir {
+			EntityArgs {
+				kind: EntityKind::Block,
+				pos: conn.dest,
+				face_dir: Some(clone_block_dir),
+			}
+		}
+		else {
+			// Find the template entity connected to the red button
+			let Some(&template) = s.templates.get(&conn.dest) else { return };
+			template
+		};
+		phase.spawns.push(args);
+
+		if is_button_press_audible(ent) {
+			s.events.fire(GameEvent::SoundFx { sound: SoundFx::ButtonPressed });
+		}
 	}
 }
 
@@ -72,13 +76,14 @@ pub fn brown_button(s: &mut GameState, _phase: &mut TerrainPhase, ent: &mut Enti
 		s.events.fire(GameEvent::SoundFx { sound: SoundFx::ButtonPressed });
 	}
 	for conn in &s.field.conns {
-		if conn.src == ent.pos {
-			// Release trapped entities at the destination
-			for ehandle in s.qt.get(conn.dest) {
-				let Some(mut ent) = s.ents.take(ehandle) else { continue };
-				ent.flags |= EF_RELEASED;
-				s.ents.put(ent);
-			}
+		if conn.src != ent.pos {
+			continue;
+		}
+		// Release trapped entities at the destination
+		for ehandle in s.qt.get(conn.dest) {
+			let Some(mut ent) = s.ents.take(ehandle) else { continue };
+			ent.flags |= EF_RELEASED;
+			s.ents.put(ent);
 		}
 	}
 }
