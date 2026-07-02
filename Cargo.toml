@@ -11,7 +11,6 @@ members = [
 	"./code/chipty",
 	"./code/chipundat",
 	"./code/chipwasm",
-	"./code/scripts/colorkey",
 	"./code/scripts/copyrecords",
 	"./code/scripts/fixcclp3",
 	"./code/scripts/fixlevel",
