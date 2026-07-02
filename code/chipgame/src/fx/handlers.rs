@@ -785,7 +785,7 @@ pub fn create_fake_blue_wall(fx: &mut FxState, pos: Vec2<i32>) {
 	let obj = render::Object {
 		data: render::ObjectData {
 			pos: Vec3::new(pos.x as f32 * 32.0, pos.y as f32 * 32.0, 0.0),
-			sprite: fx.render.tiles[chipty::Terrain::FakeBlueWall as usize].sprite,
+			sprite: (fx.render.tiles)(chipty::Terrain::FakeBlueWall).sprite,
 			frame: 0,
 			model: chipty::ModelId::Wall,
 			alpha: 1.0,

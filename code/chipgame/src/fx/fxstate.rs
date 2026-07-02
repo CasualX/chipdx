@@ -57,7 +57,7 @@ impl cvar::IVisit for FxState {
 
 impl FxState {
 	/// Creates a new FxState initialized for the given level.
-	pub fn new(level_number: i32, level_dto: &chipty::LevelDto, rng_seed: chipcore::RngSeed, tiles: &'static [render::TileGfx]) -> Box<FxState> {
+	pub fn new(level_number: i32, level_dto: &chipty::LevelDto, rng_seed: chipcore::RngSeed, tiles: render::TileGfxFn) -> Box<FxState> {
 		let mut fx = Box::new(FxState::default());
 		fx.level_number = level_number;
 		fx.render.tiles = tiles;

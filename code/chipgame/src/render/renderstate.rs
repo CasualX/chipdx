@@ -32,14 +32,26 @@ pub struct UpdateCtx {
 	pub dt: f64,
 }
 
-#[derive(Default)]
 pub struct RenderState {
 	pub objects: ObjectMap,
 	pub field: RenderField,
 	pub effects: Vec<Effect>,
-	pub tiles: &'static [TileGfx],
+	pub tiles: TileGfxFn,
 	pub shadow_map: Option<Box<dyn shade::Texture2D>>,
 	pub light_matrix: Mat4f,
+}
+
+impl Default for RenderState {
+	fn default() -> Self {
+		Self {
+			objects: ObjectMap::default(),
+			field: RenderField::default(),
+			effects: Vec::new(),
+			tiles: crate::play::tile_gfx,
+			shadow_map: None,
+			light_matrix: Mat4f::default(),
+		}
+	}
 }
 
 impl Clone for RenderState {

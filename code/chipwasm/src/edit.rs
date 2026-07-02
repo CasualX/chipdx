@@ -13,9 +13,8 @@ fn create_instance() -> Box<EditorInstance> {
 	config.render_scale = 1.0;
 	config.post_process = chipgame::config::PostProcess::None;
 	let (graphics, resx) = create_graphics_resources(&config);
-	let mut editor = chipgame::editor::EditorState::default();
+	let mut editor = chipgame::editor::EditorState::new(include_str!("../../chipedit/src/template.json"));
 	editor.set_screen_size(800, 600);
-	editor.load_level(include_str!("../../chipedit/src/template.json"));
 	Box::new(EditorInstance {
 		graphics,
 		resx,
@@ -112,7 +111,7 @@ pub extern "C" fn loadEditorLevel(instance: *mut EditorInstance, level_ptr: *con
 		return -1;
 	}
 	let instance = unsafe { &mut *instance };
-	instance.editor.load_level(json);
+	instance.editor = chipgame::editor::EditorState::new(json);
 	return 0;
 }
 

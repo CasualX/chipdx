@@ -142,7 +142,7 @@ fn load_level(
 	if let Some(fp) = file_path {
 		match fs::read_to_string(fp) {
 			Ok(contents) => {
-				editor.load_level(&contents);
+				*editor = editor::EditorState::new(&contents);
 				*saved_level = Some(editor.save_level());
 				if let Some(app) = app {
 					app.window.set_title(&format!("ChipEdit - {}", fp.display()));
@@ -196,9 +196,8 @@ fn main() {
 
 	// App state
 	let mut app: Option<Box<AppStuff>> = None;
-	let mut editor = editor::EditorState::default();
+	let mut editor = editor::EditorState::new(include_str!("template.json"));
 	editor.set_screen_size(800, 600);
-	editor.load_level(include_str!("template.json"));
 	let mut saved_level: Option<String> = None;
 
 	let mut shift_held = false;

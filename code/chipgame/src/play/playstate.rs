@@ -109,7 +109,7 @@ impl PlayState {
 		};
 
 		// Create the FX state
-		let mut fx = fx::FxState::new(level_number, level, seed, &tiles::TILES);
+		let mut fx = fx::FxState::new(level_number, level, seed, tiles::tile_gfx);
 		fx.game.ps.attempts = attempts;
 		fx.replay_inputs = inputs;
 		fx.camera.set_perspective(self.save_data.options.perspective);
@@ -124,7 +124,7 @@ impl PlayState {
 
 	fn preview_level(&mut self, level_number: i32) {
 		self.fx = if let Some(level) = self.lvsets.current().levels.get((level_number - 1) as usize) {
-			let mut fx = fx::FxState::new(level_number, level, chipcore::RngSeed::System, &tiles::TILES);
+			let mut fx = fx::FxState::new(level_number, level, chipcore::RngSeed::System, tiles::tile_gfx);
 			fx.is_preview = true;
 			fx.camera.set_perspective(self.save_data.options.perspective);
 			fx.camera.set_zoom_mode(self.save_data.options.zoom_mode, false, fx.time);

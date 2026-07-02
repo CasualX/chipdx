@@ -375,8 +375,8 @@ pub fn draw(
 	}
 }
 
-pub fn draw_tile(cv: &mut shade::im::DrawBuilder::<render::Vertex, render::Uniform>, resx: &Resources, terrain: chipty::Terrain, pos: Vec3<f32>, tiles: &[TileGfx]) {
-	let tile = tiles[terrain as usize];
+pub fn draw_tile(cv: &mut shade::im::DrawBuilder::<render::Vertex, render::Uniform>, resx: &Resources, terrain: chipty::Terrain, pos: Vec3<f32>, tile_gfx: TileGfxFn) {
+	let tile = tile_gfx(terrain);
 	draw(cv, None, resx, pos, tile.sprite, tile.model, 0, 1.0);
 }
 
@@ -388,7 +388,7 @@ pub fn field(cv: &mut shade::im::DrawBuilder::<render::Vertex, render::Uniform>,
 	for y in 0..field.height {
 		for x in 0..field.width {
 			let tile = field.get_terrain(Vec2(x, y));
-			let tile = fx.tiles[tile as usize];
+			let tile = (fx.tiles)(tile);
 			if tile.sprite == chipty::SpriteId::Blank || tile.model == chipty::ModelId::Empty {
 				continue;
 			}

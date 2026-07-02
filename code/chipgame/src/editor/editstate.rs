@@ -4,7 +4,6 @@ const ZOOM_STEP: f32 = 32.0;
 const ZOOM_MIN: f32 = 64.0;
 const ZOOM_MAX: f32 = 1024.0;
 
-#[derive(Default)]
 pub struct EditorEditState {
 	pub fx: Box<FxEditState>,
 	pub tool: Option<ToolState>,
@@ -19,14 +18,24 @@ pub struct EditorEditState {
 }
 
 impl EditorEditState {
-	pub fn load_level(&mut self, json: &str) {
+	pub fn load_level(json: &str) -> EditorEditState {
 		let mut level_dto: LevelDto = serde_json::from_str(json).unwrap();
 		level_dto.normalize();
 
-		self.fx = FxEditState::new(chipcore::EditState::from_level_dto(&level_dto), &tiles::TILES);
+		let fx = FxEditState::new(chipcore::EditState::from_level_dto(&level_dto), tiles::tile_gfx);
 
 		// Reset history to the freshly loaded level
-		self.history.clear(json.to_string());
+		let history = History::new(json.to_string());
+
+		EditorEditState {
+			fx,
+			tool: None,
+			screen_size: Vec2::ZERO,
+			cursor_pos: Vec2::ZERO,
+			mouse_pos: Vec3::ZERO,
+			input: Input::default(),
+			history,
+		}
 	}
 	pub fn reload_level(&mut self, json: &str) {
 		let mut level_dto: LevelDto = serde_json::from_str(json).unwrap();
@@ -34,7 +43,7 @@ impl EditorEditState {
 
 		// Reload the level but keep the camera position
 		let old_cam = self.fx.camera.clone();
-		self.fx = FxEditState::new(chipcore::EditState::from_level_dto(&level_dto), &tiles::TILES);
+		self.fx = FxEditState::new(chipcore::EditState::from_level_dto(&level_dto), tiles::tile_gfx);
 		self.fx.camera = old_cam;
 	}
 	pub fn save_level_dto(&self) -> chipty::LevelDto {

@@ -26,6 +26,8 @@ pub struct TileGfx {
 	pub model: chipty::ModelId,
 }
 
+pub type TileGfxFn = fn(chipty::Terrain) -> TileGfx;
+
 pub fn drawbg(g: &mut shade::Graphics, resx: &Resources) {
 	g.begin(&shade::BeginArgs::Immediate {
 		viewport: resx.viewport,

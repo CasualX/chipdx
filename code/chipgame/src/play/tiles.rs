@@ -1,59 +1,65 @@
 use super::*;
 
-pub static TILES: [render::TileGfx; 55] = [
-	render::TileGfx { sprite: chipty::SpriteId::Blank, model: chipty::ModelId::Empty }, // Terrain::Blank
-	render::TileGfx { sprite: chipty::SpriteId::Floor, model: chipty::ModelId::Floor }, // Terrain::Floor
-	render::TileGfx { sprite: chipty::SpriteId::Wall, model: chipty::ModelId::Wall }, // Terrain::Wall
-	render::TileGfx { sprite: chipty::SpriteId::Floor, model: chipty::ModelId::Floor }, // Terrain::Socket
-	render::TileGfx { sprite: chipty::SpriteId::BlueLock, model: chipty::ModelId::Wall }, // Terrain::BlueLock
-	render::TileGfx { sprite: chipty::SpriteId::RedLock, model: chipty::ModelId::Wall }, // Terrain::RedLock
-	render::TileGfx { sprite: chipty::SpriteId::GreenLock, model: chipty::ModelId::Wall }, // Terrain::GreenLock
-	render::TileGfx { sprite: chipty::SpriteId::YellowLock, model: chipty::ModelId::Wall }, // Terrain::YellowLock
-	render::TileGfx { sprite: chipty::SpriteId::Hint, model: chipty::ModelId::Floor }, // Terrain::Hint
-	render::TileGfx { sprite: chipty::SpriteId::ExitA, model: chipty::ModelId::EndPortal }, // Terrain::Exit
-	render::TileGfx { sprite: chipty::SpriteId::ExitA, model: chipty::ModelId::EndPortal }, // Terrain::FakeExit
-	render::TileGfx { sprite: chipty::SpriteId::WaterA, model: chipty::ModelId::Floor }, // Terrain::Water
-	render::TileGfx { sprite: chipty::SpriteId::WaterHazard, model: chipty::ModelId::Floor }, // Terrain::WaterHazard
-	render::TileGfx { sprite: chipty::SpriteId::Floor, model: chipty::ModelId::Floor }, // Terrain::Fire
-	render::TileGfx { sprite: chipty::SpriteId::Dirt, model: chipty::ModelId::Floor }, // Terrain::Dirt
-	render::TileGfx { sprite: chipty::SpriteId::DirtBlock, model: chipty::ModelId::Wall }, // Terrain::DirtBlock
-	render::TileGfx { sprite: chipty::SpriteId::Gravel, model: chipty::ModelId::Floor }, // Terrain::Gravel
-	render::TileGfx { sprite: chipty::SpriteId::Ice, model: chipty::ModelId::Floor }, // Terrain::Ice
-	render::TileGfx { sprite: chipty::SpriteId::IceCornerNW, model: chipty::ModelId::Floor }, // Terrain::IceNW
-	render::TileGfx { sprite: chipty::SpriteId::IceCornerNE, model: chipty::ModelId::Floor }, // Terrain::IceNE
-	render::TileGfx { sprite: chipty::SpriteId::IceCornerSW, model: chipty::ModelId::Floor }, // Terrain::IceSW
-	render::TileGfx { sprite: chipty::SpriteId::IceCornerSE, model: chipty::ModelId::Floor }, // Terrain::IceSE
-	render::TileGfx { sprite: chipty::SpriteId::ForceFloorNA, model: chipty::ModelId::Floor }, // Terrain::ForceN
-	render::TileGfx { sprite: chipty::SpriteId::ForceFloorWA, model: chipty::ModelId::Floor }, // Terrain::ForceW
-	render::TileGfx { sprite: chipty::SpriteId::ForceFloorSA, model: chipty::ModelId::Floor }, // Terrain::ForceS
-	render::TileGfx { sprite: chipty::SpriteId::ForceFloorEA, model: chipty::ModelId::Floor }, // Terrain::ForceE
-	render::TileGfx { sprite: chipty::SpriteId::ForceRandomA, model: chipty::ModelId::Floor }, // Terrain::ForceRandom
-	render::TileGfx { sprite: chipty::SpriteId::CloneMachine, model: chipty::ModelId::Wall }, // Terrain::CloneMachine
-	render::TileGfx { sprite: chipty::SpriteId::CloneBlockN, model: chipty::ModelId::Wall }, // Terrain::CloneBlockN
-	render::TileGfx { sprite: chipty::SpriteId::CloneBlockW, model: chipty::ModelId::Wall }, // Terrain::CloneBlockW
-	render::TileGfx { sprite: chipty::SpriteId::CloneBlockS, model: chipty::ModelId::Wall }, // Terrain::CloneBlockS
-	render::TileGfx { sprite: chipty::SpriteId::CloneBlockE, model: chipty::ModelId::Wall }, // Terrain::CloneBlockE
-	render::TileGfx { sprite: chipty::SpriteId::ToggleFloorA, model: chipty::ModelId::Floor }, // Terrain::ToggleFloor
-	render::TileGfx { sprite: chipty::SpriteId::ToggleFloorA, model: chipty::ModelId::Floor }, // Terrain::ToggleWall
-	render::TileGfx { sprite: chipty::SpriteId::ThinWallN, model: chipty::ModelId::Floor }, // Terrain::ThinWallN
-	render::TileGfx { sprite: chipty::SpriteId::ThinWallW, model: chipty::ModelId::Floor }, // Terrain::ThinWallW
-	render::TileGfx { sprite: chipty::SpriteId::ThinWallS, model: chipty::ModelId::Floor }, // Terrain::ThinWallS
-	render::TileGfx { sprite: chipty::SpriteId::ThinWallE, model: chipty::ModelId::Floor }, // Terrain::ThinWallE
-	render::TileGfx { sprite: chipty::SpriteId::ThinWallNW, model: chipty::ModelId::Floor }, // Terrain::ThinWallNW
-	render::TileGfx { sprite: chipty::SpriteId::ThinWallNE, model: chipty::ModelId::Floor }, // Terrain::ThinWallNE
-	render::TileGfx { sprite: chipty::SpriteId::ThinWallSW, model: chipty::ModelId::Floor }, // Terrain::ThinWallSW
-	render::TileGfx { sprite: chipty::SpriteId::ThinWallSE, model: chipty::ModelId::Floor }, // Terrain::ThinWallSE
-	render::TileGfx { sprite: chipty::SpriteId::ThinWallH, model: chipty::ModelId::Floor }, // Terrain::ThinWallH
-	render::TileGfx { sprite: chipty::SpriteId::ThinWallV, model: chipty::ModelId::Floor }, // Terrain::ThinWallV
-	render::TileGfx { sprite: chipty::SpriteId::Floor, model: chipty::ModelId::Floor }, // Terrain::HiddenWall
-	render::TileGfx { sprite: chipty::SpriteId::Floor, model: chipty::ModelId::Floor }, // Terrain::InvisibleWall
-	render::TileGfx { sprite: chipty::SpriteId::RealBlueWall, model: chipty::ModelId::Wall }, // Terrain::RealBlueWall
-	render::TileGfx { sprite: chipty::SpriteId::RealBlueWall, model: chipty::ModelId::Wall }, // Terrain::FakeBlueWall
-	render::TileGfx { sprite: chipty::SpriteId::GreenButton, model: chipty::ModelId::Floor }, // Terrain::GreenButton
-	render::TileGfx { sprite: chipty::SpriteId::RedButton, model: chipty::ModelId::Floor }, // Terrain::RedButton
-	render::TileGfx { sprite: chipty::SpriteId::BrownButton, model: chipty::ModelId::Floor }, // Terrain::BrownButton
-	render::TileGfx { sprite: chipty::SpriteId::BlueButton, model: chipty::ModelId::Floor }, // Terrain::BlueButton
-	render::TileGfx { sprite: chipty::SpriteId::Teleport, model: chipty::ModelId::Floor }, // Terrain::Teleport
-	render::TileGfx { sprite: chipty::SpriteId::Blank, model: chipty::ModelId::Empty }, // Terrain::BearTrap
-	render::TileGfx { sprite: chipty::SpriteId::RecessedWall, model: chipty::ModelId::Floor }, // Terrain::RecessedWall
-];
+pub fn tile_gfx(terrain: chipty::Terrain) -> render::TileGfx {
+	use chipty::{ModelId, SpriteId, Terrain};
+
+	let (sprite, model) = match terrain {
+		Terrain::Blank => (SpriteId::Blank, ModelId::Empty),
+		Terrain::Floor => (SpriteId::Floor, ModelId::Floor),
+		Terrain::Wall => (SpriteId::Wall, ModelId::Wall),
+		Terrain::Socket => (SpriteId::Floor, ModelId::Floor),
+		Terrain::BlueLock => (SpriteId::BlueLock, ModelId::Wall),
+		Terrain::RedLock => (SpriteId::RedLock, ModelId::Wall),
+		Terrain::GreenLock => (SpriteId::GreenLock, ModelId::Wall),
+		Terrain::YellowLock => (SpriteId::YellowLock, ModelId::Wall),
+		Terrain::Hint => (SpriteId::Hint, ModelId::Floor),
+		Terrain::Exit => (SpriteId::ExitA, ModelId::EndPortal),
+		Terrain::FakeExit => (SpriteId::ExitA, ModelId::EndPortal),
+		Terrain::Water => (SpriteId::WaterA, ModelId::Floor),
+		Terrain::WaterHazard => (SpriteId::WaterHazard, ModelId::Floor),
+		Terrain::Fire => (SpriteId::Floor, ModelId::Floor),
+		Terrain::Dirt => (SpriteId::Dirt, ModelId::Floor),
+		Terrain::DirtBlock => (SpriteId::DirtBlock, ModelId::Wall),
+		Terrain::Gravel => (SpriteId::Gravel, ModelId::Floor),
+		Terrain::Ice => (SpriteId::Ice, ModelId::Floor),
+		Terrain::IceNW => (SpriteId::IceCornerNW, ModelId::Floor),
+		Terrain::IceNE => (SpriteId::IceCornerNE, ModelId::Floor),
+		Terrain::IceSW => (SpriteId::IceCornerSW, ModelId::Floor),
+		Terrain::IceSE => (SpriteId::IceCornerSE, ModelId::Floor),
+		Terrain::ForceN => (SpriteId::ForceFloorNA, ModelId::Floor),
+		Terrain::ForceW => (SpriteId::ForceFloorWA, ModelId::Floor),
+		Terrain::ForceS => (SpriteId::ForceFloorSA, ModelId::Floor),
+		Terrain::ForceE => (SpriteId::ForceFloorEA, ModelId::Floor),
+		Terrain::ForceRandom => (SpriteId::ForceRandomA, ModelId::Floor),
+		Terrain::CloneMachine => (SpriteId::CloneMachine, ModelId::Wall),
+		Terrain::CloneBlockN => (SpriteId::CloneBlockN, ModelId::Wall),
+		Terrain::CloneBlockW => (SpriteId::CloneBlockW, ModelId::Wall),
+		Terrain::CloneBlockS => (SpriteId::CloneBlockS, ModelId::Wall),
+		Terrain::CloneBlockE => (SpriteId::CloneBlockE, ModelId::Wall),
+		Terrain::ToggleFloor => (SpriteId::ToggleFloorA, ModelId::Floor),
+		Terrain::ToggleWall => (SpriteId::ToggleFloorA, ModelId::Floor),
+		Terrain::ThinWallN => (SpriteId::ThinWallN, ModelId::Floor),
+		Terrain::ThinWallW => (SpriteId::ThinWallW, ModelId::Floor),
+		Terrain::ThinWallS => (SpriteId::ThinWallS, ModelId::Floor),
+		Terrain::ThinWallE => (SpriteId::ThinWallE, ModelId::Floor),
+		Terrain::ThinWallNW => (SpriteId::ThinWallNW, ModelId::Floor),
+		Terrain::ThinWallNE => (SpriteId::ThinWallNE, ModelId::Floor),
+		Terrain::ThinWallSW => (SpriteId::ThinWallSW, ModelId::Floor),
+		Terrain::ThinWallSE => (SpriteId::ThinWallSE, ModelId::Floor),
+		Terrain::ThinWallH => (SpriteId::ThinWallH, ModelId::Floor),
+		Terrain::ThinWallV => (SpriteId::ThinWallV, ModelId::Floor),
+		Terrain::HiddenWall => (SpriteId::Floor, ModelId::Floor),
+		Terrain::InvisibleWall => (SpriteId::Floor, ModelId::Floor),
+		Terrain::RealBlueWall => (SpriteId::RealBlueWall, ModelId::Wall),
+		Terrain::FakeBlueWall => (SpriteId::RealBlueWall, ModelId::Wall),
+		Terrain::GreenButton => (SpriteId::GreenButton, ModelId::Floor),
+		Terrain::RedButton => (SpriteId::RedButton, ModelId::Floor),
+		Terrain::BrownButton => (SpriteId::BrownButton, ModelId::Floor),
+		Terrain::BlueButton => (SpriteId::BlueButton, ModelId::Floor),
+		Terrain::Teleport => (SpriteId::Teleport, ModelId::Floor),
+		Terrain::BearTrap => (SpriteId::Blank, ModelId::Empty),
+		Terrain::RecessedWall => (SpriteId::RecessedWall, ModelId::Floor),
+	};
+
+	render::TileGfx { sprite, model }
+}

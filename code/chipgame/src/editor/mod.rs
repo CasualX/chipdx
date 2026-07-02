@@ -102,22 +102,13 @@ pub enum EditorState {
 	Play(Box<EditorPlayState>),
 }
 
-impl Default for EditorState {
-	fn default() -> Self {
-		EditorState::Edit(Box::new(EditorEditState::default()))
-	}
-}
-
 impl EditorState {
 	pub fn is_playing(&self) -> bool {
 		matches!(self, EditorState::Play(_))
 	}
 
-	pub fn load_level(&mut self, json: &str) {
-		match self {
-			EditorState::Edit(s) => s.load_level(json),
-			EditorState::Play(_) => {}
-		}
+	pub fn new(json: &str) -> EditorState {
+		EditorState::Edit(Box::new(EditorEditState::load_level(json)))
 	}
 	pub fn reload_level(&mut self, json: &str) {
 		match self {
@@ -196,7 +187,7 @@ impl EditorState {
 			EditorState::Edit(s) => {
 				let level = s.save_level();
 				let level_dto = serde_json::from_str(&level).unwrap();
-				let mut fx = fx::FxState::new(0, &level_dto, chipcore::RngSeed::System, &crate::play::TILES);
+				let mut fx = fx::FxState::new(0, &level_dto, chipcore::RngSeed::System, crate::play::tile_gfx);
 				fx.time = s.fx.time;
 				let edit_view = s.fx.camera.save_state();
 
@@ -211,8 +202,7 @@ impl EditorState {
 			}
 			EditorState::Play(s) => {
 				let play_view = s.fx.camera.save_state();
-				let mut state = EditorEditState::default();
-				state.load_level(&s.level);
+				let mut state = EditorEditState::load_level(&s.level);
 				state.screen_size = s.screen_size;
 				state.fx.time = s.fx.time;
 

@@ -6,24 +6,11 @@ pub struct FxEditState {
 	pub time: f64,
 	pub dt: f64,
 	pub random: fx::Random,
-	pub tiles: &'static [render::TileGfx],
-}
-
-impl Default for FxEditState {
-	fn default() -> Self {
-		FxEditState {
-			edit: chipcore::EditState::default(),
-			camera: fx::PlayCamera::default(),
-			time: 0.0,
-			dt: 0.0,
-			random: fx::Random::default(),
-			tiles: &[],
-		}
-	}
+	pub tiles: render::TileGfxFn,
 }
 
 impl FxEditState {
-	pub fn new(edit: chipcore::EditState, tiles: &'static [render::TileGfx]) -> Box<FxEditState> {
+	pub fn new(edit: chipcore::EditState, tiles: render::TileGfxFn) -> Box<FxEditState> {
 		let mut fx = Box::new(FxEditState {
 			edit,
 			camera: fx::PlayCamera::default(),
@@ -160,7 +147,7 @@ impl FxEditState {
 			for x in 0..self.edit.width {
 				let pos = Vec2(x, y);
 				let terrain = self.edit.get_terrain(pos);
-				let tile = self.tiles[terrain as usize];
+				let tile = (self.tiles)(terrain);
 				let frame = terrain_frame(self.time, terrain);
 				render::draw(cv, Some(camera), resx, pos.map(|c| c as f32 * 32.0).vec3(0.0), tile.sprite, tile.model, frame, 1.0);
 			}
