@@ -94,6 +94,7 @@ impl FxEditState {
 			levels: None,
 			depth: Some(resx.backdepth()),
 		});
+		self.draw_grid(g, resx, &camera);
 		self.draw_field(g, resx, &camera);
 		g.end();
 	}
@@ -109,6 +110,40 @@ impl FxEditState {
 	fn update_camera_bounds(&mut self) {
 		self.camera.bounds.mins = Vec2::ZERO;
 		self.camera.bounds.maxs = Vec2(self.edit.width as f32 * 32.0, self.edit.height as f32 * 32.0);
+	}
+
+	fn draw_grid(&self, g: &mut dyn shade::IGraphics, resx: &fx::Resources, camera: &shade::d3::Camera) {
+		let mut cv = shade::im::DrawBuilder::<menu::UiVertex, menu::UiUniform>::new();
+		cv.blend_mode = shade::BlendMode::Alpha;
+		cv.shader = Some(resx.colorshader.as_ref());
+		cv.uniform.transform = cvmath::Transform2::ortho(resx.viewport.cast());
+
+		let pen = shade::d2::Pen {
+			template: menu::UiVertex { pos: Vec2::ZERO, uv: Vec2::ZERO, color: [255, 255, 255, 64] },
+		};
+		let width = self.edit.width as f32 * 32.0;
+		let height = self.edit.height as f32 * 32.0;
+
+		for x in 0..=self.edit.width {
+			let x = x as f32 * 32.0;
+			if let (Some(start), Some(end)) = (
+				camera.world_to_viewport(Vec3(x, 0.0, 0.0)),
+				camera.world_to_viewport(Vec3(x, height, 0.0)),
+			) {
+				cv.draw_line(&pen, start, end);
+			}
+		}
+		for y in 0..=self.edit.height {
+			let y = y as f32 * 32.0;
+			if let (Some(start), Some(end)) = (
+				camera.world_to_viewport(Vec3(0.0, y, 0.0)),
+				camera.world_to_viewport(Vec3(width, y, 0.0)),
+			) {
+				cv.draw_line(&pen, start, end);
+			}
+		}
+
+		cv.draw(g);
 	}
 
 	fn draw_field(&self, g: &mut dyn shade::IGraphics, resx: &fx::Resources, camera: &shade::d3::Camera) {
