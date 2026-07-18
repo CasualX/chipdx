@@ -62,7 +62,7 @@ impl PauseMenu {
 			events.push(MenuEvent::OpenScoutMode);
 		}
 	}
-	pub fn draw(&mut self, g: &mut shade::Graphics, resx: &Resources) {
+	pub fn draw(&mut self, g: &mut dyn shade::IGraphics, resx: &Resources) {
 		let mut buf = shade::d2::TextBuffer::new();
 		buf.blend_mode = shade::BlendMode::Alpha;
 		buf.shader = Some(&*resx.font.shader);

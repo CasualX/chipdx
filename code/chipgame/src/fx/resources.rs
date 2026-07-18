@@ -38,7 +38,7 @@ impl shade::IShaderInterface for StaticShaderInterface {
 	}
 }
 
-fn compile_static_shader(g: &mut shade::Graphics, name: &'static str, source: &'static str) -> Box<dyn shade::ShaderProgram> {
+fn compile_static_shader(g: &mut dyn shade::IGraphics, name: &'static str, source: &'static str) -> Box<dyn shade::ShaderProgram> {
 	let mut interface = StaticShaderInterface { name, source };
 	g.shader_compile(&mut interface, name, &[])
 }
@@ -76,7 +76,7 @@ pub struct Resources {
 
 #[track_caller]
 fn load_png(
-	g: &mut shade::Graphics,
+	g: &mut dyn shade::IGraphics,
 	fs: &crate::FileSystem,
 	path: &str,
 	props: &shade::TextureProps,
@@ -99,7 +99,7 @@ impl Resources {
 		self.viewport.width().min(self.viewport.height()) as f32 * crate::menu::FONT_SIZE
 	}
 
-	pub fn load(fs: &crate::FileSystem, config: &crate::config::Config, g: &mut shade::Graphics) -> Resources {
+	pub fn load(fs: &crate::FileSystem, config: &crate::config::Config, g: &mut dyn shade::IGraphics) -> Resources {
 		let mut shaders = HashMap::<String, Box<dyn shade::ShaderProgram>>::new();
 		for (name, shader) in &config.shaders {
 			let (base, shader_name) = split_shader_path(&shader.shader);
@@ -167,7 +167,7 @@ impl Resources {
 		}
 	}
 
-	pub fn update_back(&mut self, g: &mut shade::Graphics) {
+	pub fn update_back(&mut self, g: &mut dyn shade::IGraphics) {
 		let width = (self.backbuffer_viewport.width() as f32 * self.renderscale) as i32;
 		let height = (self.backbuffer_viewport.height() as f32 * self.renderscale) as i32;
 		self.viewport = Bounds2!(0, 0, width, height);
@@ -203,7 +203,7 @@ impl Resources {
 		g.texture2d_ensure(&mut self.backdepth, &depth_info);
 	}
 
-	pub fn present(&self, g: &mut shade::Graphics, time: f64) {
+	pub fn present(&self, g: &mut dyn shade::IGraphics, time: f64) {
 		g.begin(&shade::BeginArgs::BackBuffer {
 			viewport: self.backbuffer_viewport,
 		});

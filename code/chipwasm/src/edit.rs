@@ -75,13 +75,12 @@ pub extern "C" fn drawEditorInstance(instance: *mut EditorInstance, time: f64, w
 		return;
 	}
 	let instance = unsafe { &mut *instance };
-	let g = instance.graphics.as_graphics();
 	instance.resx.backbuffer_viewport.maxs = cvmath::Vec2i(width, height);
-	instance.resx.update_back(g);
+	instance.resx.update_back(&mut instance.graphics);
 	instance.editor.set_screen_size(width, height);
-	instance.editor.draw(g, &instance.resx, time);
-	instance.resx.present(g, time);
-	_ = g.get_draw_metrics(true);
+	instance.editor.draw(&mut instance.graphics, &instance.resx, time);
+	instance.resx.present(&mut instance.graphics, time);
+	_ = instance.graphics.get_draw_metrics(true);
 }
 
 #[allow(non_snake_case)]

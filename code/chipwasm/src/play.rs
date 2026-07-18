@@ -24,7 +24,7 @@ fn set_title(state: &chipgame::play::PlayState) {
 fn quit_game(instance: &mut PlayInstance) {
 	// Relaunch the game to return to the levelset select screen, since we can't actually quit the page.
 	instance.play.lvsets.selected = -1;
-	instance.play.launch(instance.graphics.as_graphics());
+	instance.play.launch(&mut instance.graphics);
 	set_title(&instance.play);
 }
 
@@ -62,7 +62,7 @@ pub extern "C" fn createPlayInstance() -> *mut PlayInstance {
 	load_levelset(&CCLP4_PAK, "cclp4".to_string(), &mut instance.play);
 	load_levelset(&CCLP5_PAK, "cclp5".to_string(), &mut instance.play);
 
-	instance.play.launch(instance.graphics.as_graphics());
+	instance.play.launch(&mut instance.graphics);
 
 	Box::into_raw(instance)
 }
@@ -191,7 +191,7 @@ pub extern "C" fn thinkPlayInstance(instance: *mut PlayInstance, buttons: u8) {
 			&chipgame::play::PlayEvent::PlaySound { sound } => play_sound(sound),
 			&chipgame::play::PlayEvent::PlayMusic { music } => play_music(music),
 			&chipgame::play::PlayEvent::SetTitle => set_title(&instance.play),
-			&chipgame::play::PlayEvent::Restart => instance.play.launch(instance.graphics.as_graphics()),
+			&chipgame::play::PlayEvent::Restart => instance.play.launch(&mut instance.graphics),
 			&chipgame::play::PlayEvent::LoadExternalLevelSet => request_levelset_file(),
 			&chipgame::play::PlayEvent::Quit => quit_game(instance),
 		}
@@ -201,10 +201,9 @@ pub extern "C" fn thinkPlayInstance(instance: *mut PlayInstance, buttons: u8) {
 #[no_mangle]
 pub extern "C" fn drawPlayInstance(instance: *mut PlayInstance, time: f64, width: i32, height: i32) {
 	let instance = unsafe { &mut *instance };
-	let g = instance.graphics.as_graphics();
 	instance.resx.backbuffer_viewport.maxs = cvmath::Vec2i(width, height);
-	instance.resx.update_back(g);
-	instance.play.draw(g, &instance.resx, time);
-	instance.resx.present(g, time);
-	instance.play.metrics = g.get_draw_metrics(true);
+	instance.resx.update_back(&mut instance.graphics);
+	instance.play.draw(&mut instance.graphics, &instance.resx, time);
+	instance.resx.present(&mut instance.graphics, time);
+	instance.play.metrics = instance.graphics.get_draw_metrics(true);
 }

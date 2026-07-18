@@ -36,7 +36,7 @@ fn create_graphics_resources(
 	let mut graphics = shade::webgl::WebGLGraphics::new(shade::webgl::WebGLConfig {
 		srgb: false,
 	});
-	let resx = chipgame::fx::Resources::load(&fs, config, graphics.as_graphics());
+	let resx = chipgame::fx::Resources::load(&fs, config, &mut graphics);
 	(graphics, resx)
 }
 

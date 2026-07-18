@@ -6,7 +6,7 @@ pub struct Fireworks {
 	pos: Vec2f,
 }
 impl Fireworks {
-	fn draw(&mut self, g: &mut shade::Graphics, resx: &Resources, time: f64, rc: Bounds2f) {
+	fn draw(&mut self, g: &mut dyn shade::IGraphics, resx: &Resources, time: f64, rc: Bounds2f) {
 		let mut rng = urandom::new();
 
 		if self.time_start == 0.0 {
@@ -91,7 +91,7 @@ impl GameWinMenu {
 			events.push(MenuEvent::CursorSelect);
 		}
 	}
-	pub fn draw(&mut self, g: &mut shade::Graphics, resx: &Resources, time: f64) {
+	pub fn draw(&mut self, g: &mut dyn shade::IGraphics, resx: &Resources, time: f64) {
 		let mut buf = shade::d2::TextBuffer::new();
 		buf.blend_mode = shade::BlendMode::Alpha;
 		buf.shader = Some(&*resx.font.shader);

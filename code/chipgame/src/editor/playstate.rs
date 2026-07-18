@@ -36,7 +36,7 @@ impl EditorPlayState {
 		};
 		self.fx.think(&input, false);
 	}
-	pub fn draw(&mut self, g: &mut shade::Graphics, resx: &fx::Resources, time: f64) {
+	pub fn draw(&mut self, g: &mut dyn shade::IGraphics, resx: &fx::Resources, time: f64) {
 		render::drawbg(g, resx);
 		self.fx.draw(g, resx, time);
 	}

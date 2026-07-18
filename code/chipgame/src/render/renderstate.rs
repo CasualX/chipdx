@@ -83,7 +83,7 @@ impl RenderState {
 		self.objects.retain(|_, obj| obj.update(ctx));
 		self.effects.retain(|efx| ctx.time < efx.start + 1.0);
 	}
-	pub fn draw(&self, g: &mut shade::Graphics, resx: &Resources, camera: &shade::d3::Camera, time: f64, vision_clip: Option<(Vec2f, f32)>) {
+	pub fn draw(&self, g: &mut dyn shade::IGraphics, resx: &Resources, camera: &shade::d3::Camera, time: f64, vision_clip: Option<(Vec2f, f32)>) {
 		g.begin(&shade::BeginArgs::Immediate {
 			viewport: resx.viewport,
 			color: &[resx.backcolor()],
@@ -96,7 +96,7 @@ impl RenderState {
 
 		g.end();
 	}
-	pub fn draw_field(&self, g: &mut shade::Graphics, resx: &Resources, camera: &shade::d3::Camera, time: f64, shadow: bool, vision_clip: Option<(Vec2f, f32)>) {
+	pub fn draw_field(&self, g: &mut dyn shade::IGraphics, resx: &Resources, camera: &shade::d3::Camera, time: f64, shadow: bool, vision_clip: Option<(Vec2f, f32)>) {
 		let mut cv = shade::im::DrawBuilder::<render::Vertex, render::Uniform>::new();
 		cv.depth_test = Some(shade::Compare::LessEqual);
 		cv.cull_mode = Some(shade::CullMode::CW);
@@ -114,7 +114,7 @@ impl RenderState {
 		render::field(&mut cv, camera, self, resx, time);
 		cv.draw(g);
 	}
-	pub fn draw_effects(&self, g: &mut shade::Graphics, resx: &Resources, camera: &shade::d3::Camera, time: f64, vision_clip: Option<(Vec2f, f32)>) {
+	pub fn draw_effects(&self, g: &mut dyn shade::IGraphics, resx: &Resources, camera: &shade::d3::Camera, time: f64, vision_clip: Option<(Vec2f, f32)>) {
 		let mut cv = shade::im::DrawBuilder::<Vertex, Uniform>::new();
 		cv.depth_test = Some(shade::Compare::Always);
 		// cv.cull_mode = Some(shade::CullMode::CW);

@@ -32,7 +32,7 @@ impl PlayState {
 		self.save_data.load(self.lvsets.current());
 	}
 
-	pub fn launch(&mut self, g: &mut shade::Graphics) {
+	pub fn launch(&mut self, g: &mut dyn shade::IGraphics) {
 		if self.lvsets.collection.is_empty() {
 			return;
 		}
@@ -426,7 +426,7 @@ impl PlayState {
 		}
 	}
 
-	pub fn draw(&mut self, g: &mut shade::Graphics, resx: &fx::Resources, time: f64) {
+	pub fn draw(&mut self, g: &mut dyn shade::IGraphics, resx: &fx::Resources, time: f64) {
 		render::drawbg(g, resx);
 
 		if let Some(fx) = &mut self.fx {

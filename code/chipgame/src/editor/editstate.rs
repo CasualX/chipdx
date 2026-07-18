@@ -133,7 +133,7 @@ impl EditorEditState {
 	}
 	pub fn think(&mut self) {
 	}
-	pub fn draw(&mut self, g: &mut shade::Graphics, resx: &fx::Resources, time: f64) {
+	pub fn draw(&mut self, g: &mut dyn shade::IGraphics, resx: &fx::Resources, time: f64) {
 		if self.input.key_left {
 			self.fx.camera.pan_free_roam(Vec2f(-5.0, 0.0), self.fx.time);
 		}

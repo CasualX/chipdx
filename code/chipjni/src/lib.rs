@@ -279,12 +279,12 @@ impl Instance {
 
 		let fs = build_data_fs();
 		let mut graphics = shade::gl::GlGraphics::new(shade::gl::GlConfig { srgb: false });
-		let mut resx = chipgame::fx::Resources::load(&fs, &self.config, graphics.as_graphics());
+		let mut resx = chipgame::fx::Resources::load(&fs, &self.config, &mut graphics);
 		resx.backbuffer_viewport.maxs = cvmath::Vec2i(self.width.max(1), self.height.max(1));
 
 		let mut play = chipgame::play::PlayState::default();
 		load_curated_levelsets(&mut play);
-		play.launch(graphics.as_graphics());
+		play.launch(&mut graphics);
 
 		self.graphics = Some(graphics);
 		self.resx = Some(resx);
@@ -305,7 +305,7 @@ impl Instance {
 					with_host(|host| host.play_music(music));
 				}
 				chipgame::play::PlayEvent::SetTitle => set_title(&self.play),
-				chipgame::play::PlayEvent::Restart => self.play.launch(graphics.as_graphics()),
+				chipgame::play::PlayEvent::Restart => self.play.launch(graphics),
 				chipgame::play::PlayEvent::LoadExternalLevelSet => {}
 				chipgame::play::PlayEvent::Quit => {
 					with_host(|host| host.quit_game());
@@ -392,13 +392,12 @@ extern "system" fn native_frame(_env: JNIEnv, _class: JClass, handle: jlong, fra
 
 	let graphics = instance.graphics.as_mut().unwrap();
 	let resx = instance.resx.as_mut().unwrap();
-	let g = graphics.as_graphics();
 	resx.backbuffer_viewport.maxs = cvmath::Vec2i(instance.width, instance.height);
-	resx.update_back(g);
+	resx.update_back(graphics);
 	let time = frame_time_nanos as f64 / NANOS_PER_SECOND as f64;
-	instance.play.draw(g, resx, time);
-	resx.present(g, time);
-	instance.play.metrics = g.get_draw_metrics(true);
+	instance.play.draw(graphics, resx, time);
+	resx.present(graphics, time);
+	instance.play.metrics = graphics.get_draw_metrics(true);
 }
 
 #[no_mangle]

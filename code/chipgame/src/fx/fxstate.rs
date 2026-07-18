@@ -254,7 +254,7 @@ impl FxState {
 			}
 		}
 	}
-	pub fn draw(&mut self, g: &mut shade::Graphics, resx: &Resources, time: f64) {
+	pub fn draw(&mut self, g: &mut dyn shade::IGraphics, resx: &Resources, time: f64) {
 		let dt = time - self.time;
 		self.time = time;
 		self.dt = dt;
@@ -411,7 +411,7 @@ impl FxState {
 		self.scout_speed = 0.0;
 	}
 
-	fn draw_shadow_map(&mut self, g: &mut shade::Graphics, resx: &Resources, scene_camera: &shade::d3::Camera) {
+	fn draw_shadow_map(&mut self, g: &mut dyn shade::IGraphics, resx: &Resources, scene_camera: &shade::d3::Camera) {
 		const SIZE: i32 = 2048;
 		let info = shade::Texture2DInfo {
 			format: shade::TextureFormat::Depth24,
@@ -449,7 +449,7 @@ impl FxState {
 		g.end();
 	}
 
-	fn draw_shadow_map_debug(&self, g: &mut shade::Graphics, resx: &Resources) {
+	fn draw_shadow_map_debug(&self, g: &mut dyn shade::IGraphics, resx: &Resources) {
 		let margin = 16.0;
 		let size = (resx.viewport.width().min(resx.viewport.height()) as f32 * 0.45).clamp(128.0, 512.0);
 		let rect = Bounds2!(margin, margin, margin + size, margin + size);
@@ -564,7 +564,7 @@ fn fade_to(obj: &mut render::Object, target_alpha: f32, fade_spd: f32) {
 	obj.anim.anims.push(render::AnimState::FadeTo(render::FadeTo { target_alpha, fade_spd }));
 }
 
-pub fn draw_entity_order(fx: &FxState, g: &mut shade::Graphics, resx: &Resources, camera: &shade::d3::Camera) {
+pub fn draw_entity_order(fx: &FxState, g: &mut dyn shade::IGraphics, resx: &Resources, camera: &shade::d3::Camera) {
 	let mut tbuf = shade::d2::TextBuffer::new();
 	tbuf.shader = Some(&*resx.font.shader);
 	tbuf.blend_mode = shade::BlendMode::Alpha;

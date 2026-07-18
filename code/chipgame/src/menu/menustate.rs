@@ -27,7 +27,7 @@ impl Menu {
 			Menu::Scout(menu) => menu.think(input, events),
 		}
 	}
-	pub fn draw(&mut self, g: &mut shade::Graphics, resx: &Resources, time: f64) {
+	pub fn draw(&mut self, g: &mut dyn shade::IGraphics, resx: &Resources, time: f64) {
 		match self {
 			Menu::LevelSet(menu) => menu.draw(g, resx),
 			Menu::Main(menu) => menu.draw(g, resx),
@@ -68,7 +68,7 @@ impl MenuState {
 		self.input = *input;
 		!self.stack.is_empty()
 	}
-	pub fn draw(&mut self, g: &mut shade::Graphics, resx: &Resources, time: f64) {
+	pub fn draw(&mut self, g: &mut dyn shade::IGraphics, resx: &Resources, time: f64) {
 		if let Some(menu) = self.stack.last_mut() {
 			menu.draw(g, resx, time);
 		}

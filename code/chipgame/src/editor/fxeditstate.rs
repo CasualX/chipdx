@@ -78,7 +78,7 @@ impl FxEditState {
 		self.edit.toggle_connection(conn);
 	}
 
-	pub fn draw(&mut self, g: &mut shade::Graphics, resx: &fx::Resources, time: f64) {
+	pub fn draw(&mut self, g: &mut dyn shade::IGraphics, resx: &fx::Resources, time: f64) {
 		self.dt = time - self.time;
 		self.time = time;
 
@@ -111,7 +111,7 @@ impl FxEditState {
 		self.camera.bounds.maxs = Vec2(self.edit.width as f32 * 32.0, self.edit.height as f32 * 32.0);
 	}
 
-	fn draw_field(&self, g: &mut shade::Graphics, resx: &fx::Resources, camera: &shade::d3::Camera) {
+	fn draw_field(&self, g: &mut dyn shade::IGraphics, resx: &fx::Resources, camera: &shade::d3::Camera) {
 		let mut cv = shade::im::DrawBuilder::<render::Vertex, render::Uniform>::new();
 		cv.depth_test = Some(shade::Compare::LessEqual);
 		cv.cull_mode = Some(shade::CullMode::CW);
@@ -188,7 +188,7 @@ impl FxEditState {
 	}
 }
 
-pub fn draw_entity_order(fx: &FxEditState, g: &mut shade::Graphics, resx: &fx::Resources, camera: &shade::d3::Camera) {
+pub fn draw_entity_order(fx: &FxEditState, g: &mut dyn shade::IGraphics, resx: &fx::Resources, camera: &shade::d3::Camera) {
 	let mut tbuf = shade::d2::TextBuffer::new();
 	tbuf.shader = Some(&*resx.font.shader);
 	tbuf.blend_mode = shade::BlendMode::Alpha;

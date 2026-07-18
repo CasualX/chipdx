@@ -39,7 +39,7 @@ pub use self::geometry::*;
 
 pub(crate) const FONT_SIZE: f32 = 1.0 / 20.0;
 
-pub fn darken(g: &mut shade::Graphics, resx: &Resources, alpha: u8) {
+pub fn darken(g: &mut dyn shade::IGraphics, resx: &Resources, alpha: u8) {
 	let mut cv = shade::im::DrawBuilder::<UiVertex, UiUniform>::new();
 
 	cv.blend_mode = shade::BlendMode::Alpha;
@@ -94,7 +94,7 @@ pub struct PlayMetrics<'a> {
 }
 
 impl<'a> PlayMetrics<'a> {
-	pub fn draw(&self, g: &mut shade::Graphics, resx: &Resources) {
+	pub fn draw(&self, g: &mut dyn shade::IGraphics, resx: &Resources) {
 		let text = fmtools::format!(
 			"Level "{self.level_number}": \x1b[color=#ff0]"{self.level_name}"\x1b[color=#fff]\n"
 			"Attempt: \x1b[color=#0f8]"{self.attempts}"\x1b[color=#fff]\n"
@@ -109,7 +109,7 @@ impl<'a> PlayMetrics<'a> {
 	}
 }
 
-pub fn draw_metrics(g: &mut shade::Graphics, resx: &Resources, metrics: &shade::DrawMetrics) {
+pub fn draw_metrics(g: &mut dyn shade::IGraphics, resx: &Resources, metrics: &shade::DrawMetrics) {
 	let text = fmtools::format!(
 		"Draw duration: \x1b[color=#0f8]"{metrics.draw_duration.as_secs_f64() * 1000.0:.2}"\x1b[color=#fff] ms\n"
 		"Draw calls: \x1b[color=#0f8]"{metrics.draw_call_count}"\x1b[color=#fff]\n"
@@ -120,7 +120,7 @@ pub fn draw_metrics(g: &mut shade::Graphics, resx: &Resources, metrics: &shade::
 	draw_overlay(g, resx, shade::d2::TextAlign::BottomLeft, &text);
 }
 
-pub fn draw_overlay(g: &mut shade::Graphics, resx: &Resources, align: shade::d2::TextAlign, text: &str) {
+pub fn draw_overlay(g: &mut dyn shade::IGraphics, resx: &Resources, align: shade::d2::TextAlign, text: &str) {
 	let mut buf = shade::d2::TextBuffer::new();
 	buf.blend_mode = shade::BlendMode::Alpha;
 	buf.shader = Some(&*resx.font.shader);

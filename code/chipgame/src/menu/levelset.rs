@@ -40,7 +40,7 @@ impl LevelSetMenu {
 			events.push(MenuEvent::CloseMenu);
 		}
 	}
-	pub fn draw(&mut self, g: &mut shade::Graphics, resx: &Resources) {
+	pub fn draw(&mut self, g: &mut dyn shade::IGraphics, resx: &Resources) {
 		self.ntime += 1;
 
 		let mut pool = shade::im::DrawPool::new();
