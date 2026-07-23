@@ -299,13 +299,22 @@ impl FxState {
 		};
 
 		let ehandle = self.game.field.camera_triggers.iter().find_map(|camera_trigger| {
+			if camera_trigger.player_pos != player.pos {
+				return None;
+			}
+
+			// Use entity index 0 as a special marker
+			if camera_trigger.entity_index == 0 {
+				if let Some(ent) = self.game.ents.iter().find(|ent| ent.kind == camera_trigger.entity_kind) {
+					return Some(ent.handle);
+				}
+				return None;
+			}
+
 			let ehandle = chipcore::EntityHandle::from(camera_trigger.entity_index);
 			let Some(entity) = self.game.ents.get(ehandle) else {
 				return None;
 			};
-			if camera_trigger.player_pos != player.pos {
-				return None;
-			}
 			if camera_trigger.entity_kind != entity.kind {
 				return None;
 			}
