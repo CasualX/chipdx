@@ -28,6 +28,14 @@ pub fn decode(string: &str) -> Vec<u8> {
 	decompress(&data)
 }
 
+pub fn try_decode(string: &str) -> Option<Vec<u8>> {
+	let data = basenc::Base64Std.decode(string).ok()?;
+	let mut z = flate2::bufread::ZlibDecoder::new(data.as_slice());
+	let mut buf = Vec::new();
+	z.read_to_end(&mut buf).ok()?;
+	Some(buf)
+}
+
 pub fn encode_level(bytes: &[u8]) -> String {
 	let compressed = compress(bytes);
 	basenc::Base64Url.encode(&compressed)

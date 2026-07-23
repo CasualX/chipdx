@@ -67,7 +67,7 @@ pub extern "C" fn createPlayInstance() -> *mut PlayInstance {
 	Box::into_raw(instance)
 }
 
-fn load_custom_level(mut level: chipty::LevelDto) -> Box<PlayInstance> {
+fn load_custom_level(mut level: chipty::LevelDto, replay_index: Option<usize>) -> Box<PlayInstance> {
 	level.normalize();
 	let level_set = chipgame::play::LevelSet {
 		name: "Custom Level".to_string(),
@@ -80,13 +80,13 @@ fn load_custom_level(mut level: chipty::LevelDto) -> Box<PlayInstance> {
 	let mut instance = create_instance();
 	instance.play.save_data.ephemeral = true;
 	instance.play.load_single_level(level_set);
-	instance.play.play_level(1);
-	return instance;
+	instance.play.play_replay(1, replay_index);
+	instance
 }
 
 #[allow(non_snake_case)]
 #[no_mangle]
-pub extern "C" fn createCustomPlayLevel(level_ptr: *const u8, level_len: usize, compressed: bool) -> *mut PlayInstance {
+pub extern "C" fn createCustomPlayLevel(level_ptr: *const u8, level_len: usize, compressed: bool, replay_index: i32) -> *mut PlayInstance {
 	shade::webgl::setup_panic_hook();
 
 	if level_ptr.is_null() {
@@ -122,7 +122,8 @@ pub extern "C" fn createCustomPlayLevel(level_ptr: *const u8, level_len: usize, 
 		return ptr::null_mut();
 	};
 
-	let instance = load_custom_level(level);
+	let replay_index = if replay_index < 0 { None } else { Some(replay_index as usize) };
+	let instance = load_custom_level(level, replay_index);
 	Box::into_raw(instance)
 }
 

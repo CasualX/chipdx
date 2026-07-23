@@ -44,6 +44,8 @@ window.chipGame = function chipGame() {
 		},
 		padDir: null,
 		gameActive: false,
+		gameThinkStartTime: 0,
+		replayStartDelayMs: 0,
 		pageActive: true,
 		pressedKeys: new Set(),
 		padTouchId: null,
@@ -81,6 +83,7 @@ window.chipGame = function chipGame() {
 			window.addEventListener("gamepadconnected", () => self.handleGamepadChange());
 			window.addEventListener("gamepaddisconnected", () => self.handleGamepadChange());
 			window.addEventListener("resize", () => self.syncViewportLayout());
+			window.addEventListener("hashchange", () => window.location.reload());
 			document.addEventListener("fullscreenchange", () => self.updateDisplayModeCta());
 			document.addEventListener("visibilitychange", () => self.syncPageActivity());
 			if (screen && screen.orientation && screen.orientation.addEventListener) {
@@ -212,6 +215,16 @@ window.chipGame = function chipGame() {
 			const hashParams = new URLSearchParams(hash);
 			const searchParams = new URLSearchParams(window.location.search);
 			return hashParams.get("link") ?? searchParams.get("link");
+		},
+
+		getReplayIndex() {
+			const hash = window.location.hash.startsWith("#?") ? window.location.hash.slice(2) : "";
+			const hashParams = new URLSearchParams(hash);
+			const searchParams = new URLSearchParams(window.location.search);
+			const value = hashParams.get("replay") ?? searchParams.get("replay");
+			if (value === null || value.trim() === "") return null;
+			const index = Number(value);
+			return Number.isInteger(index) && index >= 0 && index <= 0x7fffffff ? index : null;
 		},
 
 		async fetchCustomLevel(link) {
@@ -623,6 +636,7 @@ window.chipGame = function chipGame() {
 			if (this.prefs.audioEnabled) {
 				await this.enableAudio();
 			}
+			this.gameThinkStartTime = performance.now() + this.replayStartDelayMs;
 			this.gameActive = true;
 		},
 
@@ -659,6 +673,8 @@ window.chipGame = function chipGame() {
 			if (customLevelLink !== null) {
 				customLevelPayload = await this.fetchCustomLevel(customLevelLink);
 			}
+			const replayIndex = customLevelPayload === null ? null : this.getReplayIndex();
+			this.replayStartDelayMs = replayIndex === null ? 0 : 1000;
 			this.setLoadingStatus("Initializing WebGL...", 0.1);
 			const shade = createWasmAPI(this.$refs.canvas, {
 				alpha: false,
@@ -887,7 +903,7 @@ window.chipGame = function chipGame() {
 					const payloadBytes = encoder.encode(customLevelPayload.value);
 					const payload = allocWasmBytes(payloadBytes);
 					try {
-						gamePtr = exports.createCustomPlayLevel(payload.ptr, payload.len, customLevelPayload.compressed);
+						gamePtr = exports.createCustomPlayLevel(payload.ptr, payload.len, customLevelPayload.compressed, replayIndex ?? -1);
 					}
 					finally {
 						exports.freeBytes(payload.ptr, payload.capacity);
@@ -928,18 +944,25 @@ window.chipGame = function chipGame() {
 					return;
 				}
 
-				const dt = Math.min(250, now - last);
-				last = now;
-				acc += dt;
-
 				if (!this.userSelectedControlScheme) {
 					this.syncControlSchemeFromEnvironment();
 				}
 
 				if (!this.gameActive) {
+					last = now;
+					acc = 0;
 					this.resizeCanvasToDisplaySize();
 					this.frameHandle = requestAnimationFrame(frame);
 					return;
+				}
+
+				const dt = Math.min(250, now - last);
+				last = now;
+				if (now < this.gameThinkStartTime) {
+					acc = 0;
+				}
+				else {
+					acc += dt;
 				}
 
 				const buttons = this.getButtonsBitmask();

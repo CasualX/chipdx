@@ -6,6 +6,7 @@ fn main() {
 		.arg(clap::arg!(--json <JSON_PATH> "Path to a level JSON file").value_parser(clap::value_parser!(path::PathBuf)))
 		.arg(clap::arg!(--paks <PAKS_PATH> "Path to a packed levelset .paks").value_parser(clap::value_parser!(path::PathBuf)))
 		.arg(clap::arg!(--dat <DAT_PATH> "Path to a levelset .dat").value_parser(clap::value_parser!(path::PathBuf)))
+		.arg(clap::arg!(--"replay-file" <REPLAY_PATH> "Path to a replay JSON file").value_parser(clap::value_parser!(path::PathBuf)))
 		.arg(clap::arg!(-k --key [KEY] "Packed levelset encryption key"))
 		.arg(clap::arg!([LEVEL] "Level number (1-based) or case-insensitive level name substring"))
 		.get_matches();
@@ -13,6 +14,7 @@ fn main() {
 	let json = matches.get_one::<path::PathBuf>("json");
 	let paks = matches.get_one::<path::PathBuf>("paks");
 	let dat = matches.get_one::<path::PathBuf>("dat");
+	let replay_file = matches.get_one::<path::PathBuf>("replay-file");
 	let selector = matches.get_one::<String>("LEVEL");
 
 	let mut level = match (json, paks, dat) {
@@ -41,8 +43,8 @@ fn main() {
 		_ => fail("use exactly one of --json, --paks, or --dat"),
 	};
 
-	// Strip the replays from the level before encoding, as they can be large and aren't needed for playing the level
-	level.replays = None;
+	// Strip any existing replays and optionally embed the requested one.
+	level.replays = replay_file.map(|path| vec![load_replay_json(path)]);
 	let level_json = serde_json::to_string(&level).expect("Failed to serialize level JSON");
 
 	let encoded = chipty::encode_level(level_json.as_bytes());
@@ -74,6 +76,11 @@ fn load_level_json(path: &path::Path) -> chipty::LevelDto {
 			std::process::exit(1);
 		}
 	}
+}
+
+fn load_replay_json(path: &path::Path) -> chipty::ReplayDto {
+	let replay_json = fs::read(path).unwrap_or_else(|err| panic!("read {}: {err}", path.display()));
+	serde_json::from_slice(&replay_json).unwrap_or_else(|err| panic!("parse replay JSON from {}: {err}", path.display()))
 }
 
 fn load_level_paks(path: &path::Path, key: &paks::Key, selector: &str) -> chipty::LevelDto {

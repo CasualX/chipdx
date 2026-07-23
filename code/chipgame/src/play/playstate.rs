@@ -71,15 +71,6 @@ impl PlayState {
 	}
 
 	pub fn play_level(&mut self, level_number: i32) {
-		// If loading a level fails just... do nothing
-		let Some(level) = self.lvsets.current().levels.get((level_number - 1) as usize)
-		else { return };
-
-		// Update save data
-		self.save_data.current_level = level_number;
-		let attempts = self.save_data.increase_level_attempts();
-		self.save_data.save(&self.lvsets.current());
-
 		// Load the segmented replay if available
 		let (seed, inputs);
 		let load_segmented_replay = || {
@@ -107,6 +98,37 @@ impl PlayState {
 			seed = chipcore::RngSeed::System;
 			inputs = None;
 		};
+
+		self.start_level(level_number, seed, inputs);
+	}
+
+	pub fn play_replay(&mut self, level_number: i32, replay_index: Option<usize>) {
+		let replay = replay_index.and_then(|replay_index| self.lvsets.current().levels
+			.get((level_number - 1) as usize)
+			.and_then(|level| level.replays.as_ref())
+			.and_then(|replays| replays.get(replay_index)));
+		let replay = replay.and_then(|replay| {
+			let seed = u64::from_str_radix(&replay.seed, 16).ok()?;
+			let inputs = chipty::try_decode(&replay.inputs)?;
+			Some((seed, inputs))
+		});
+		if let Some((seed, inputs)) = replay {
+			self.start_level(level_number, chipcore::RngSeed::Manual(seed), Some(inputs));
+		}
+		else {
+			self.play_level(level_number);
+		}
+	}
+
+	fn start_level(&mut self, level_number: i32, seed: chipcore::RngSeed, inputs: Option<Vec<u8>>) {
+		// If loading a level fails just... do nothing
+		let Some(level) = self.lvsets.current().levels.get((level_number - 1) as usize)
+		else { return };
+
+		// Update save data
+		self.save_data.current_level = level_number;
+		let attempts = self.save_data.increase_level_attempts();
+		self.save_data.save(&self.lvsets.current());
 
 		// Create the FX state
 		let mut fx = fx::FxState::new(level_number, level, seed, tiles::tile_gfx);
