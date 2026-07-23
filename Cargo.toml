@@ -21,7 +21,6 @@ members = [
 	"./code/scripts/playground",
 	"./code/scripts/publish",
 	"./code/scripts/replayfix",
-	"./code/scripts/spritec",
 ]
 
 [workspace.dependencies]

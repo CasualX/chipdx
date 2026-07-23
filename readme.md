@@ -48,6 +48,7 @@ Other platforms must be built from source code.
 1. Install [Rust](https://www.rust-lang.org/tools/install) and clone this repository.
 2. Run the game: `cargo run --release --bin chipplay`
 3. Level editor: `cargo run --release --bin chipedit`
+4. Rebuild the sprite atlas: `atlaskit build gfx/MS/sprites.ini --output data/spritesheet`
 
 ### Publish from Source
 
