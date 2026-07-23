@@ -9,7 +9,12 @@ pub enum LevelRef {
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct LevelSetDto {
+	pub name: String,
 	pub title: String,
+	#[serde(default, skip_serializing_if = "Option::is_none")]
+	pub subtitle: Option<String>,
+	#[serde(default, skip_serializing_if = "is_default")]
+	pub difficulty: i32,
 	#[serde(default, skip_serializing_if = "Option::is_none")]
 	pub about: Option<Vec<String>>,
 	#[serde(default, skip_serializing_if = "Option::is_none")]

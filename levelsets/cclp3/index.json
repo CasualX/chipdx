@@ -1,6 +1,9 @@
 {
 	"name": "cclp3",
 	"title": "Chip's Challenge Level Pack 3",
+	"subtitle": "Fan-made favorites, voted in by the community and built to play cleanly under both MS and Lynx rules.",
+	"author": "CCLP3 Staff",
+	"difficulty": 5,
 	"splash": "splash.gif",
 	"levels": [
 		"lv/level1.json",

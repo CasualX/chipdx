@@ -1,6 +1,9 @@
 {
 	"name": "cclp4",
 	"title": "Chip's Challenge Level Pack 4",
+	"subtitle": "A modern return to the original rules, selecting balanced challenges from thousands of community submissions.",
+	"author": "CCLP4 Staff",
+	"difficulty": 4,
 	"splash": "logo.png",
 	"levels": [
 		"lv/level1.json",

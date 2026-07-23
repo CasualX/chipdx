@@ -50,7 +50,10 @@ pub fn convert(dat: &super::Data, title: String) -> chipty::LevelSetDto {
 	}
 
 	chipty::LevelSetDto {
+		name: title.clone(),
 		title,
+		subtitle: None,
+		difficulty: 0,
 		about: None,
 		splash: None,
 		levels,

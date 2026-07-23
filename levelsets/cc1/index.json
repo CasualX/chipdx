@@ -1,6 +1,8 @@
 {
 	"name": "cc1",
 	"title": "Chip's Challenge",
+	"subtitle": "The original 149-level adventure.\nClassic puzzles, tricky mazes, and real-time challenges.",
+	"difficulty": 3,
 	"about": [
 		"Before Chip can join the Bit Busters computer club",
 		"and hang out with the girl of his dreams, Melinda the",

@@ -1,6 +1,9 @@
 {
 	"name": "cclp1",
 	"title": "Chip's Challenge Level Pack 1",
+	"subtitle": "A beginner-friendly collection of community-made puzzles designed to teach the classics.",
+	"author": "CCLP1 Staff",
+	"difficulty": 3,
 	"about": [
 		"CCLP1 staff",
 		"",

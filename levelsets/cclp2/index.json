@@ -1,6 +1,9 @@
 {
 	"name": "cclp2",
 	"title": "Chip's Challenge Level Pack 2",
+	"subtitle": "An early community collection of puzzles.\nExperimental, uneven, and full of old-school ingenuity.",
+	"author": "CCLP2 Staff",
+	"difficulty": 4,
 	"about": [
 		"Chip McCallahan is now a proud member of Melinda the",
 		"Mental Marvel's exclusive computer club, the Bit Busters.",

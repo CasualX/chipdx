@@ -1,6 +1,9 @@
 {
 	"name": "cclp5",
 	"title": "Chip's Challenge Level Pack 5",
+	"subtitle": "The newest community showcase refined from thousands of submissions after years of testing and voting.",
+	"author": "CCLP5 Staff",
+	"difficulty": 4,
 	"splash": "banner.png",
 	"levels": [
 		"lv/level1.json",

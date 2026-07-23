@@ -1,4 +1,5 @@
 {
+  "name": "WoCC1",
   "title": "Walls of CC1",
   "levels": [
     "lv/level1.json",
