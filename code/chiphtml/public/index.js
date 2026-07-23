@@ -207,6 +207,52 @@ window.chipGame = function chipGame() {
 			return null;
 		},
 
+		getCustomLevelLink() {
+			const hash = window.location.hash.startsWith("#?") ? window.location.hash.slice(2) : "";
+			const hashParams = new URLSearchParams(hash);
+			const searchParams = new URLSearchParams(window.location.search);
+			return hashParams.get("link") ?? searchParams.get("link");
+		},
+
+		async fetchCustomLevel(link) {
+			if (!link.trim()) {
+				throw new Error("The custom level link is empty");
+			}
+			let url;
+			try {
+				url = new URL(link, window.location.href);
+			}
+			catch {
+				throw new Error("The custom level link is not a valid URL");
+			}
+			if (url.protocol !== "http:" && url.protocol !== "https:") {
+				throw new Error("The custom level link must use http:// or https://");
+			}
+
+			this.setLoadingStatus("Fetching custom level...", 0.05);
+			let response;
+			try {
+				response = await fetch(url.href, {
+					credentials: "omit",
+					headers: {
+						Accept: "application/json, text/plain;q=0.9, */*;q=0.1",
+					},
+				});
+			}
+			catch (err) {
+				const detail = err && err.message ? `: ${err.message}` : "";
+				throw new Error(`Could not fetch the custom level link${detail}. The server must allow cross-origin requests.`);
+			}
+			if (!response.ok) {
+				throw new Error(`Custom level fetch failed: ${response.status} ${response.statusText}`);
+			}
+
+			return {
+				value: await response.text(),
+				compressed: false,
+			};
+		},
+
 		isLandscapeViewport() {
 			return window.innerWidth >= window.innerHeight;
 		},
@@ -608,7 +654,11 @@ window.chipGame = function chipGame() {
 
 		async load() {
 			this.updateDisplayModeCta();
-			const customLevelPayload = this.getCustomLevelPayload();
+			const customLevelLink = this.getCustomLevelLink();
+			let customLevelPayload = this.getCustomLevelPayload();
+			if (customLevelLink !== null) {
+				customLevelPayload = await this.fetchCustomLevel(customLevelLink);
+			}
 			this.setLoadingStatus("Initializing WebGL...", 0.1);
 			const shade = createWasmAPI(this.$refs.canvas, {
 				alpha: false,
