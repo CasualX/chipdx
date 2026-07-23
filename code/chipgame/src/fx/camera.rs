@@ -163,11 +163,11 @@ impl PlayCamera {
 	}
 
 	pub fn load_state(&mut self, state: PlayCameraState, time: f64) {
-		self.transition_offset = state.target - self.raw_target(time);
-		self.update_target(time);
 		self.offset = state.offset;
 		self.blend.blend = state.blend;
 		self.vision_half_extent = state.vision_half_extent;
+		self.transition_offset = state.target - self.raw_target(time);
+		self.update_target(time);
 	}
 
 	pub fn setup(&self, screen_size: Vec2i) -> shade::d3::Camera {
@@ -202,6 +202,17 @@ impl PlayCamera {
 		}
 	}
 
+	/// Keeps the logical camera source inside the level, inset by the active play vision range.
+	fn clamp_target(&self, target: Vec2f) -> Vec2f {
+		let margin = match self.zoom_mode {
+			chipty::ZoomMode::Classic | chipty::ZoomMode::Wide => self.vision_half_extent,
+			chipty::ZoomMode::Fit | chipty::ZoomMode::Editor => 0.0,
+		};
+		let inset = self.bounds.inset(margin);
+		let center = self.bounds.center();
+		target.max(inset.mins.min(center)).min(inset.maxs.max(center))
+	}
+
 	fn get_offset(&self) -> Vec3f {
 		self.offset.set_y(self.offset.y * self.blend.blend)
 	}
@@ -230,7 +241,13 @@ impl PlayCamera {
 	}
 
 	fn update_target(&mut self, time: f64) {
-		self.target = self.raw_target(time) + self.transition_offset;
+		let target = self.raw_target(time) + self.transition_offset;
+		self.target = self.clamp_target(target);
+		// Keep free-roam input from accumulating invisibly past an edge
+		if let Some(free_roam) = self.controller.free_roam_mut() {
+			let correction = self.target - target;
+			free_roam.target += correction;
+		}
 	}
 
 	/// Returns the smooth camera look-at target position in the ground plane.
@@ -263,10 +280,6 @@ impl PlayCamera {
 	pub fn set_zoom_mode(&mut self, zoom_mode: chipty::ZoomMode, animate: bool, time: f64) {
 		let old_target = self.target();
 		self.zoom_mode = zoom_mode;
-		let new_target = self.raw_target(time);
-		self.transition_offset = if animate { old_target - new_target } else { Vec2f::ZERO };
-		self.update_target(time);
-
 		self.offset_target = match zoom_mode {
 			chipty::ZoomMode::Wide => WIDE_OFFSET,
 			chipty::ZoomMode::Classic => CLASSIC_OFFSET,
@@ -280,6 +293,10 @@ impl PlayCamera {
 				chipty::ZoomMode::Fit | chipty::ZoomMode::Editor => level_vision_half_extent(&self.bounds),
 			};
 		}
+
+		let new_target = self.raw_target(time);
+		self.transition_offset = if animate { old_target - new_target } else { Vec2f::ZERO };
+		self.update_target(time);
 	}
 
 	/// Manually zooms the camera.
