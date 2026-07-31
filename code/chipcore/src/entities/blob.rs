@@ -22,7 +22,7 @@ fn movement_phase(s: &mut GameState, phase: &mut MovementPhase, ent: &mut Entity
 	if s.time >= ent.step_time + ent.step_spd {
 		if try_terrain_move(s, phase, ent) { }
 		// The direction of the blob means nothing, it is completely random
-		else if { let step_dir = s.rand.next(); try_move(s, phase, ent, step_dir) } { }
+		else if { let step_dir = s.rand.random(); try_move(s, phase, ent, step_dir) } { }
 	}
 }
 

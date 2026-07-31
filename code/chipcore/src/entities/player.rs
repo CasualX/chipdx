@@ -116,7 +116,7 @@ fn movement_phase(s: &mut GameState, phase: &mut MovementPhase, ent: &mut Entity
 				Terrain::ForceE => Some(Compass::Right),
 				Terrain::ForceN => Some(Compass::Up),
 				Terrain::ForceS => Some(Compass::Down),
-				Terrain::ForceRandom => Some(s.rand.next()),
+				Terrain::ForceRandom => Some(s.rand.random()),
 				_ => None,
 			};
 			if let Some(force_dir) = force_dir {

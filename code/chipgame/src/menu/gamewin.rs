@@ -10,13 +10,13 @@ impl Fireworks {
 		let mut rng = urandom::new();
 
 		if self.time_start == 0.0 {
-			self.time_start = time - rng.range(0.0..1.0);
+			self.time_start = time - rng.uniform(0.0..1.0);
 		}
 
 		if time >= self.time_start + 1.0 {
 			self.time_start = time;
-			self.pos.x = rng.range(rc.left()..rc.right()).round();
-			self.pos.y = rng.range(rc.top()..rc.bottom()).round();
+			self.pos.x = rng.uniform(rc.left()..rc.right()).round();
+			self.pos.y = rng.uniform(rc.top()..rc.bottom()).round();
 		}
 
 		let atime = (time - self.time_start) as f32;

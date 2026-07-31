@@ -4,11 +4,11 @@ use super::*;
 #[derive(Clone)]
 #[repr(transparent)]
 pub struct Random {
-	rand: urandom::Random<urandom::rng::Xoshiro256>,
+	rand: urandom::Random<urandom::rng::Xoshiro256Rng>,
 }
 
 impl ops::Deref for Random {
-	type Target = urandom::Random<urandom::rng::Xoshiro256>;
+	type Target = urandom::Random<urandom::rng::Xoshiro256Rng>;
 
 	#[inline]
 	fn deref(&self) -> &Self::Target {
@@ -26,13 +26,13 @@ impl ops::DerefMut for Random {
 impl Default for Random {
 	fn default() -> Self {
 		Random {
-			rand: urandom::rng::Xoshiro256::new(),
+			rand: urandom::rng::Xoshiro256Rng::new(),
 		}
 	}
 }
 
 impl Random {
 	pub fn reseed(&mut self, seed: u64) {
-		self.rand = urandom::rng::Xoshiro256::from_seed(seed);
+		self.rand = urandom::rng::Xoshiro256Rng::from_seed_u64(seed);
 	}
 }

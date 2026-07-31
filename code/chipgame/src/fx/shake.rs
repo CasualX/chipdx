@@ -47,7 +47,7 @@ impl CameraShake {
 			return;
 		}
 
-		self.offset = Vec3(random.range(-1.0..1.0), random.range(-1.0..1.0), 0.0) * magnitude;
+		self.offset = Vec3(random.uniform(-magnitude..magnitude), random.uniform(-magnitude..magnitude), 0.0);
 		if self.time <= 0.0 {
 			self.duration = 0.0;
 			self.magnitude = 0.0;

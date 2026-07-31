@@ -65,7 +65,7 @@ impl Compass {
 
 impl urandom::Distribution<Compass> for urandom::distr::StandardUniform {
 	fn sample<R: urandom::Rng + ?Sized>(&self, rng: &mut urandom::Random<R>) -> Compass {
-		match rng.next_u32() % 4 {
+		match rng.random::<u32>() % 4 {
 			0 => Compass::Up,
 			1 => Compass::Left,
 			2 => Compass::Down,

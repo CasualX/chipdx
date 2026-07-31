@@ -473,7 +473,7 @@ pub fn try_terrain_move(s: &mut GameState, phase: &mut MovementPhase, ent: &mut 
 		Terrain::ForceW => try_move(s, phase, ent, Compass::Left),
 		Terrain::ForceS => try_move(s, phase, ent, Compass::Down),
 		Terrain::ForceE => try_move(s, phase, ent, Compass::Right),
-		Terrain::ForceRandom => { let dir = s.rand.next(); try_move(s, phase, ent, dir) },
+		Terrain::ForceRandom => { let dir = s.rand.random(); try_move(s, phase, ent, dir) },
 		Terrain::Teleport => match ent.step_dir {
 			Some(step_dir) => teleport(s, phase, ent, step_dir), // If this fails the entity gets softlocked, player is not affected
 			None => false,

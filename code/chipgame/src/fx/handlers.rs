@@ -34,7 +34,7 @@ pub fn entity_created(fx: &mut FxState, ehandle: chipcore::EntityHandle, kind: c
 	if matches!(kind, chipty::EntityKind::Bomb) {
 		obj.data.sprite = chipty::SpriteId::BombA;
 		obj.anim.anims.push(render::AnimState::AnimLoop(render::SpriteAnimLoop {
-			start_time: fx.time + fx.random.next_f64() * 10.0,
+			start_time: fx.time + fx.random.uniform(10.0..20.0),
 			frame_rate: 16.0,
 		}));
 	}
@@ -327,7 +327,7 @@ pub fn create_fire(fx: &mut FxState, pos: Vec2<i32>) {
 		},
 		anim: render::Animation {
 			anims: vec![render::AnimState::AnimLoop(render::SpriteAnimLoop {
-				start_time: fx.time + fx.random.next_f64() * 10.0,
+				start_time: fx.time + fx.random.uniform(10.0..20.0),
 				frame_rate: 8.0,
 			})],
 			unalive_after_anim: false,

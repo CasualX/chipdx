@@ -35,7 +35,7 @@ cvar = "0.4"
 cvmath = { version = "0.1.1", features=["serde", "dataview"] }
 fmtools = "0.1"
 
-urandom = "0.2"
+urandom = "1.0.0-alpha.1"
 dataview = "1.0"
 
 flate2 = "1.0"
