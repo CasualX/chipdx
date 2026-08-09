@@ -93,7 +93,7 @@ impl FxState {
 				transform,
 				texture: &*resx.font.texture,
 				outline_width_absolute: 0.8,
-				unit_range: Vec2::dup(4.0f32) / Vec2(232.0f32, 232.0f32),
+				distance_range: 4.0f32,
 				..Default::default()
 			};
 			let size = ss.y as f32 * 0.025;
@@ -152,7 +152,7 @@ impl FxState {
 				transform,
 				texture: &*resx.font.texture,
 				outline_width_absolute: 0.8,
-				unit_range: Vec2::dup(4.0f32) / Vec2(232.0f32, 232.0f32),
+				distance_range: 4.0f32,
 				..Default::default()
 			};
 			let size = ss.y as f32 * 0.05;
@@ -191,7 +191,7 @@ impl FxState {
 					transform,
 					texture: &*resx.font.texture,
 					outline_width_absolute: 0.8,
-					unit_range: Vec2::dup(4.0f32) / Vec2(232.0f32, 232.0f32),
+					distance_range: 4.0f32,
 					..Default::default()
 				};
 				let size = ss.y as f32 * 0.05;
