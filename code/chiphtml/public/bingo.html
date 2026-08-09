@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content="Generate and share a Chip's Challenge bingo board for streams and community play." />
+		<meta name="theme-color" content="#080d19" />
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content="Chip's Challenge Bingo" />
+		<meta property="og:description" content="Same challenges, different card: play Chip's Challenge bingo with a streamer or friends." />
+		<title>Chip's Challenge Bingo</title>
+		<link rel="icon" href="./favicon.ico" />
+		<link rel="stylesheet" href="./bingo.css" />
+	</head>
+	<body>
+		<!-- Small, dependency-free vector tile art. Each challenge chooses one symbol. -->
+		<svg class="icon-library" aria-hidden="true" focusable="false">
+			<defs>
+				<symbol id="tile-chip" viewBox="0 0 64 64"><rect x="17" y="17" width="30" height="30" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M24 25h16v14H24zM9 23h8M9 32h8M9 41h8M47 23h8M47 32h8M47 41h8M23 9v8M32 9v8M41 9v8M23 47v8M32 47v8M41 47v8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+				<symbol id="tile-key" viewBox="0 0 64 64"><circle cx="22" cy="24" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="m29 31 21 21m-8-8 7-7m-14 0 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></symbol>
+				<symbol id="tile-lock" viewBox="0 0 64 64"><rect x="13" y="27" width="38" height="29" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 27v-7c0-15 22-15 22 0v7M32 37v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+				<symbol id="tile-boots" viewBox="0 0 64 64"><path d="M12 10h15v25l9 7v10H9V39l8-5V10m23 5h14v21l5 5v11H35V42l7-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+				<symbol id="tile-block" viewBox="0 0 64 64"><path d="M9 19 32 7l23 12v27L32 58 9 46zM9 19l23 13 23-13M32 32v26" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+				<symbol id="tile-water" viewBox="0 0 64 64"><path d="M5 20c7-7 12 7 20 0s13 7 21 0 11 2 13 0M5 33c7-7 12 7 20 0s13 7 21 0 11 2 13 0M5 46c7-7 12 7 20 0s13 7 21 0 11 2 13 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+				<symbol id="tile-ice" viewBox="0 0 64 64"><path d="M32 6v52M10 19l44 26M10 45l44-26M22 11l10 8 10-8M22 53l10-8 10 8M8 30l12 4-2 12M56 34l-12-4 2-12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></symbol>
+				<symbol id="tile-fire" viewBox="0 0 64 64"><path d="M35 6c3 14-10 16-6 28 3-8 8-10 12-15 9 9 14 19 9 29-8 15-31 14-38 0C5 34 17 22 24 14c0 8 4 10 5 13 5-7 5-13 6-21Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+				<symbol id="tile-button" viewBox="0 0 64 64"><ellipse cx="32" cy="45" rx="25" ry="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 44V29c0-8 36-8 36 0v16M14 29c0 9 36 9 36 0" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+				<symbol id="tile-teleport" viewBox="0 0 64 64"><circle cx="32" cy="32" r="25" fill="none" stroke="currentColor" stroke-width="2"/><path d="M32 48c-16 0-17-23-2-26 13-3 20 13 11 21-7 6-17-1-13-8 3-6 11-2 9 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+				<symbol id="tile-monster" viewBox="0 0 64 64"><path d="M13 54V25C13 4 51 4 51 25v29l-9-7-10 7-10-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M22 28h7m6 0h7M25 39h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></symbol>
+				<symbol id="tile-timer" viewBox="0 0 64 64"><circle cx="32" cy="35" r="22" fill="none" stroke="currentColor" stroke-width="2"/><path d="M32 35V21m0 14 11 7M24 7h16M32 7v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+				<symbol id="tile-map" viewBox="0 0 64 64"><path d="m7 14 16-7 18 7 16-7v43l-16 7-18-7-16 7zM23 7v43m18-36v43" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+				<symbol id="tile-wall" viewBox="0 0 64 64"><path d="M6 12h52v40H6zM6 25h52M6 39h52M19 12v13m26-13v13M13 25v14m25-14v14M24 39v13m25-13v13" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+				<symbol id="tile-socket" viewBox="0 0 64 64"><circle cx="32" cy="32" r="25" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="24" cy="29" r="4" fill="currentColor"/><circle cx="40" cy="29" r="4" fill="currentColor"/><path d="M23 43c5-5 13-5 18 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+				<symbol id="tile-thief" viewBox="0 0 64 64"><path d="M8 27c13-16 35-16 48 0-13 17-35 17-48 0Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19 25h9m8 0h9M32 14v27M20 49h24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+				<symbol id="tile-tank" viewBox="0 0 64 64"><path d="M10 43h44v11H10zM18 43V27h28v16M27 27V17h15M42 17h15" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="20" cy="49" r="3"/><circle cx="32" cy="49" r="3"/><circle cx="44" cy="49" r="3"/></symbol>
+				<symbol id="tile-trap" viewBox="0 0 64 64"><path d="M11 9v46M25 9v46M39 9v46M53 9v46M7 14h50M7 50h50" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="32" cy="34" r="8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+				<symbol id="tile-toggle" viewBox="0 0 64 64"><rect x="8" y="12" width="21" height="40" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="35" y="12" width="21" height="40" rx="3" fill="currentColor"/><path d="m18 26 5-5 5 5M46 40l-5 5-5-5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+				<symbol id="tile-exit" viewBox="0 0 64 64"><path d="M12 55h40M18 55V9h28v46M26 32h28m-8-8 8 8-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="37" cy="34" r="2"/></symbol>
+				<symbol id="tile-hint" viewBox="0 0 64 64"><path d="M10 11h44v35H31L18 57V46h-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M25 25c0-8 14-8 14 0 0 5-7 5-7 10m0 5v1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+				<symbol id="tile-bomb" viewBox="0 0 64 64"><circle cx="29" cy="37" r="20" fill="none" stroke="currentColor" stroke-width="2"/><path d="m39 20 6-7 6 6m-14-1 6 5M51 8v-3M56 13h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></symbol>
+				<symbol id="tile-heart" viewBox="0 0 64 64"><path d="M32 55 10 34C-4 19 15 4 27 16l5 6 5-6C49 4 68 19 54 34Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+				<symbol id="tile-free" viewBox="0 0 64 64"><path d="m32 5 8 17 19 2-14 13 4 19-17-9-17 9 4-19L5 24l19-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="m23 32 6 6 13-14" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+			</defs>
+		</svg>
+
+		<main class="app-shell" x-data="bingoBoard()" x-init="init()" x-cloak>
+			<header class="site-header">
+				<a class="brand" href="./bingo.html" aria-label="Chip's Challenge Bingo">
+					<span class="brand-mark" aria-hidden="true"><span></span></span>
+					<span><strong>Chip's Challenge</strong><small>Bingo broadcast</small></span>
+				</a>
+				<a class="play-link" href="./">Play Chip's Challenge DX <span aria-hidden="true">→</span></a>
+			</header>
+
+			<section class="landing" x-show="ready && !hasBoard">
+				<div class="landing-copy">
+					<p class="eyebrow">Chip's Challenge DX</p>
+					<h1>Stream bingo.<br /><em>Ready when you are.</em></h1>
+					<p class="seed-error" x-show="seedError" x-text="seedError" role="alert"></p>
+					<button class="primary-action" type="button" @click="generateBoard()">
+						<span class="button-tile" aria-hidden="true">+</span>
+						<span><strong>Generate board</strong></span>
+					</button>
+				</div>
+				<div class="landing-preview" aria-hidden="true">
+					<div class="preview-card preview-one"><span>COMMON</span><svg viewBox="0 0 64 64"><use href="#tile-hint"></use></svg><b>Chat spots it first</b></div>
+					<div class="preview-card preview-two"><span>RARE</span><svg viewBox="0 0 64 64"><use href="#tile-monster"></use></svg><b>Monster mayhem</b></div>
+					<div class="preview-card preview-three"><span>EPIC</span><svg viewBox="0 0 64 64"><use href="#tile-timer"></use></svg><b>Exactly 1 second</b></div>
+				</div>
+			</section>
+
+			<template x-if="ready && hasBoard">
+				<div class="game-view">
+					<section class="game-heading">
+						<div>
+							<p class="eyebrow">Board <span class="seed-pill" x-text="boardSeed"></span></p>
+							<h1>Chip's Challenge <em>Bingo</em></h1>
+						</div>
+						<div class="heading-actions">
+							<button class="secondary-action" type="button" @click="generateBoard()">New board</button>
+							<button class="primary-action compact" type="button" @click="copyInvite()">
+								<span x-text="copied ? 'Link copied!' : 'Copy invite link'"></span>
+							</button>
+						</div>
+					</section>
+
+					<section class="board-wrap" aria-label="Bingo card">
+						<div class="bingo-status" :class="{ visible: isBingo }" role="status" aria-live="polite">
+							<span x-show="isBingo" aria-hidden="true">★</span>
+							<strong x-text="isBingo ? bingoMessage : 'Mark a full row, column, or diagonal'"></strong>
+							<span x-show="isBingo" aria-hidden="true">★</span>
+						</div>
+
+						<div class="bingo-grid" :class="{ 'has-bingo': isBingo }">
+							<template x-for="(square, index) in squares" :key="square.id">
+								<button
+									class="bingo-square"
+									type="button"
+									:class="'rarity-' + square.rarity + (isMarked(square) ? ' marked' : '') + (square.free ? ' free' : '') + (isWinningSquare(index) ? ' winning-square' : '')"
+									:disabled="square.free"
+									@click="toggleSquare(square)"
+									:aria-pressed="square.free ? null : (isMarked(square) ? 'true' : 'false')"
+									:aria-label="square.free ? 'CHIP! Free center square' : square.text + ', ' + square.rarity + (isMarked(square) ? ', marked' : ', not marked')"
+								>
+									<span class="rarity-label" x-text="square.free ? 'FREE' : square.rarity"></span>
+									<span class="square-art" aria-hidden="true"><svg viewBox="0 0 64 64"><use :href="'#tile-' + square.icon"></use></svg></span>
+									<span class="square-text" x-text="square.text"></span>
+								</button>
+							</template>
+						</div>
+
+						<div class="card-actions">
+							<button type="button" @click="clearProgress()" :disabled="markedIds.length === 0">Clear marks</button>
+							<span aria-hidden="true"></span>
+							<button type="button" @click="newPlayerCard()">Reshuffle card</button>
+						</div>
+					</section>
+				</div>
+			</template>
+		</main>
+
+		<script src="./bingo.js" type="module"></script>
+		<script src="./alpine.min.js" defer></script>
+	</body>
+</html>
