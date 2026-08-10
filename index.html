@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content="Play Chip's Challenge DX in your browser with keyboard, controller, or touch controls." />
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content="Chip's Challenge DX" />
+		<meta property="og:description" content="Play Chip's Challenge DX in your browser with keyboard, controller, or touch controls." />
+		<meta property="og:url" content="https://casualhacks.net/chipdx/" />
+		<meta property="og:image" content="https://casualhacks.net/chipdx/social-preview.png" />
+		<meta property="og:image:alt" content="Screenshot of Chip's Challenge DX showing a key-filled level and HUD counters." />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content="Chip's Challenge DX" />
+		<meta name="twitter:description" content="Play Chip's Challenge DX in your browser with keyboard, controller, or touch controls." />
+		<meta name="twitter:image" content="https://casualhacks.net/chipdx/social-preview.png" />
+		<title>Chip's Challenge DX</title>
+		<link rel="icon" href="./favicon.ico" />
+		<link rel="stylesheet" href="./index.css" />
+	</head>
+	<body>
+		<div id="root" x-data="chipGame()" x-init="init()">
+			<svg class="ui-icons" aria-hidden="true" focusable="false">
+				<defs>
+					<!-- Keyboard -->
+					<symbol id="icon-keyboard" viewBox="0 0 24 24">
+						<path d="M4 19q-.825 0-1.412-.587T2 17V7q0-.825.588-1.412T4 5h16q.825 0 1.413.588T22 7v10q0 .825-.587 1.413T20 19zm4-3h8v-2H8zm-3-3h2v-2H5zm3 0h2v-2H8zm3 0h2v-2h-2zm3 0h2v-2h-2zm3 0h2v-2h-2zM5 10h2V8H5zm3 0h2V8H8zm3 0h2V8h-2zm3 0h2V8h-2zm3 0h2V8h-2z"/>
+					</symbol>
+					<!-- Controller -->
+					<symbol id="icon-controller" viewBox="0 0 24 24">
+						<path d="M6 7h12a5 5 0 0 1 5 5a5 5 0 0 1-5 5c-1.64 0-3.09-.79-4-2h-4c-.91 1.21-2.36 2-4 2a5 5 0 0 1-5-5a5 5 0 0 1 5-5m13.75 2.5a1.25 1.25 0 0 0-1.25 1.25A1.25 1.25 0 0 0 19.75 12A1.25 1.25 0 0 0 21 10.75a1.25 1.25 0 0 0-1.25-1.25m-2.5 2.5A1.25 1.25 0 0 0 16 13.25a1.25 1.25 0 0 0 1.25 1.25a1.25 1.25 0 0 0 1.25-1.25A1.25 1.25 0 0 0 17.25 12M5 9v2H3v2h2v2h2v-2h2v-2H7V9z"/>
+					</symbol>
+					<!-- Touch -->
+					<symbol id="icon-touch" viewBox="0 0 24 24">
+						<path fill="currentColor" d="M10.475 22q-.7 0-1.312-.3t-1.038-.85l-5.45-6.925l.475-.5q.5-.525 1.2-.625t1.3.275L7.5 14.2V6q0-.425.288-.712T8.5 5t.725.288t.3.712v5H17q1.25 0 2.125.875T20 14v4q0 1.65-1.175 2.825T16 22zm-6.3-13.5q-.325-.55-.5-1.187T3.5 6q0-2.075 1.463-3.537T8.5 1t3.538 1.463T13.5 6q0 .675-.175 1.313t-.5 1.187l-1.725-1q.2-.35.3-.712T11.5 6q0-1.25-.875-2.125T8.5 3t-2.125.875T5.5 6q0 .425.1.788t.3.712z"/>
+					</symbol>
+					<!-- Check -->
+					<symbol id="icon-check" viewBox="0 0 24 24">
+						<path d="M9.25 16.25 5 12l1.5-1.5 2.75 2.75L17.5 5 19 6.5l-9.75 9.75Z" />
+					</symbol>
+				</defs>
+			</svg>
+
+			<canvas id="game" x-ref="canvas"></canvas>
+			<div id="hud" x-text="hudText"></div>
+			<button id="display-mode-cta" type="button" x-cloak x-show="showDisplayModeCta" @click="requestPreferredDisplayMode()">
+				<span id="display-mode-cta-icon" aria-hidden="true">⛶</span>
+				<span>Fullscreen</span>
+			</button>
+			<input id="levelset-file-input" x-ref="levelSetFileInput" type="file" accept=".dat,.ccl,application/octet-stream" @change="loadLocalPlayLevelSet($event)" />
+			<div id="levelset-file-prompt" x-cloak x-show="levelSetFilePromptVisible" @click.self="levelSetFilePromptVisible = false">
+				<button type="button" @click="$refs.levelSetFileInput.click()">Choose Levelset File</button>
+			</div>
+			<div id="loading-screen" aria-live="polite" x-cloak x-show="!gameActive">
+				<div id="loading-panel-frame" :style="{ width: loadingPanelFrameWidth + 'px', height: loadingPanelFrameHeight + 'px' }">
+					<div id="loading-panel" x-ref="loadingPanel" :class="{ landscape: showAllControlHints }" :style="{ transform: 'scale(' + loadingPanelScale + ')' }">
+						<div id="loading-title">Chip's Challenge DX</div>
+						<div id="loading-bar"><span :style="{ width: Math.round(loadingProgress * 100) + '%' }"></span></div>
+						<div id="loading-status" x-text="overlayStatusText"></div>
+						<div id="control-grid">
+						<section class="control-card" :class="{ selected: selectedControlScheme === 'keyboard' }" role="button" tabindex="0" @click="selectControlScheme('keyboard')" @keydown.enter.prevent="selectControlScheme('keyboard')" @keydown.space.prevent="selectControlScheme('keyboard')" :aria-pressed="selectedControlScheme === 'keyboard' ? 'true' : 'false'">
+							<div class="control-card-toggle">
+								<div class="control-card-head">
+									<span class="control-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-keyboard"></use></svg></span>
+									<div>
+										<div class="control-name">Keyboard</div>
+										<div class="control-summary">Direct bindings for desktop play</div>
+									</div>
+								</div>
+							</div>
+							<div class="control-card-body" :class="{ expanded: selectedControlScheme === 'keyboard' || showAllControlHints }" :aria-hidden="selectedControlScheme === 'keyboard' || showAllControlHints ? 'false' : 'true'">
+								<div class="binding-row"><span class="binding-label">Move</span><span class="binding-value"><span class="binding-chord"><span class="keycap">W</span><span class="keycap">A</span><span class="keycap">S</span><span class="keycap">D</span></span><span class="binding-sep">or</span><span class="binding-chord"><span class="keycap">↑</span><span class="keycap">←</span><span class="keycap">↓</span><span class="keycap">→</span></span></span></div>
+								<div class="binding-row"><span class="binding-label">Action</span><span class="binding-value"><span class="keycap wide">Space</span></span></div>
+								<div class="binding-row"><span class="binding-label">Back</span><span class="binding-value"><span class="keycap wide">Backspace</span></span></div>
+								<div class="binding-row"><span class="binding-label">Start</span><span class="binding-value"><span class="keycap wide">Enter</span></span></div>
+								<div class="binding-row"><span class="binding-label">Select</span><span class="binding-value"><span class="keycap wide">Shift</span></span></div>
+							</div>
+						</section>
+						<section class="control-card" :class="{ selected: selectedControlScheme === 'gamepad' }" role="button" tabindex="0" @click="selectControlScheme('gamepad')" @keydown.enter.prevent="selectControlScheme('gamepad')" @keydown.space.prevent="selectControlScheme('gamepad')" :aria-pressed="selectedControlScheme === 'gamepad' ? 'true' : 'false'">
+							<div class="control-card-toggle">
+								<div class="control-card-head">
+									<span class="control-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-controller"></use></svg></span>
+									<div>
+										<div class="control-name">Controller</div>
+										<div class="control-summary">Gamepad-friendly layout</div>
+									</div>
+								</div>
+							</div>
+							<div class="control-card-body" :class="{ expanded: selectedControlScheme === 'gamepad' || showAllControlHints }" :aria-hidden="selectedControlScheme === 'gamepad' || showAllControlHints ? 'false' : 'true'">
+								<div class="binding-row"><span class="binding-label">Move</span><span class="binding-value"><span class="keycap wide">D-pad</span><span class="binding-sep">or</span><span class="keycap wide">Left stick</span></span></div>
+								<div class="binding-row"><span class="binding-label">Action</span><span class="binding-value"><span class="keycap">A</span></span></div>
+								<div class="binding-row"><span class="binding-label">Back</span><span class="binding-value"><span class="keycap">B</span></span></div>
+								<div class="binding-row"><span class="binding-label">Start</span><span class="binding-value"><span class="keycap wide">Start</span></span></div>
+								<div class="binding-row"><span class="binding-label">Select</span><span class="binding-value"><span class="keycap wide">Select</span></span></div>
+							</div>
+						</section>
+						<section class="control-card" :class="{ selected: selectedControlScheme === 'touch' }" role="button" tabindex="0" @click="selectControlScheme('touch')" @keydown.enter.prevent="selectControlScheme('touch')" @keydown.space.prevent="selectControlScheme('touch')" :aria-pressed="selectedControlScheme === 'touch' ? 'true' : 'false'">
+							<div class="control-card-toggle">
+								<div class="control-card-head">
+									<span class="control-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-touch"></use></svg></span>
+									<div>
+										<div class="control-name">Touch</div>
+										<div class="control-summary">On-screen pad and action buttons</div>
+									</div>
+								</div>
+							</div>
+							<div class="control-card-body" :class="{ expanded: selectedControlScheme === 'touch' || showAllControlHints }" :aria-hidden="selectedControlScheme === 'touch' || showAllControlHints ? 'false' : 'true'">
+								<div class="binding-row"><span class="binding-label">Move</span><span class="binding-value"><span class="keycap wide">Drag pad</span></span></div>
+								<div class="binding-row"><span class="binding-label">Action</span><span class="binding-value"><span class="keycap">A</span></span></div>
+								<div class="binding-row"><span class="binding-label">Back</span><span class="binding-value"><span class="keycap">B</span></span></div>
+								<div class="binding-row"><span class="binding-label">Start</span><span class="binding-value"><span class="keycap wide">Start</span></span></div>
+								<div class="binding-row"><span class="binding-label">Select</span><span class="binding-value"><span class="keycap wide">Select</span></span></div>
+							</div>
+						</section>
+						</div>
+						<div id="session-options">
+							<label class="option-toggle">
+								<input type="checkbox" x-model="prefs.audioEnabled" />
+								<span class="option-toggle-ui"><svg viewBox="0 0 24 24"><use href="#icon-check"></use></svg></span>
+								<span>Audio</span>
+							</label>
+							<label class="option-toggle">
+								<input type="checkbox" x-model="prefs.fullscreenEnabled" @change="savePrefs()" />
+								<span class="option-toggle-ui"><svg viewBox="0 0 24 24"><use href="#icon-check"></use></svg></span>
+								<span>Fullscreen</span>
+							</label>
+							<button id="play-button" type="button" @click="startGame()" :disabled="!isReadyToPlay">Play</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div id="touch-controls" :class="{ enabled: touchEnabled }" :aria-hidden="touchEnabled ? 'false' : 'true'">
+				<div
+					class="pad"
+					id="touch-pad"
+					x-ref="touchPad"
+					aria-hidden="true"
+					@touchstart.prevent="onPadTouchStart($event)"
+					@touchmove.prevent="onPadTouchMove($event)"
+					@touchend.prevent="onPadTouchEnd($event)"
+					@touchcancel.prevent="onPadTouchEnd($event)"
+				>
+					<div class="dir up" :class="{ active: padDir === 'up' }"><span class="dir-glyph">▲</span></div>
+					<div class="dir down" :class="{ active: padDir === 'down' }"><span class="dir-glyph">▼</span></div>
+					<div class="dir left" :class="{ active: padDir === 'left' }"><span class="dir-glyph">◀</span></div>
+					<div class="dir right" :class="{ active: padDir === 'right' }"><span class="dir-glyph">▶</span></div>
+				</div>
+				<div class="cluster">
+					<button data-btn="b" :class="{ active: touchPressed.b }" @touchstart.prevent="pressTouchButton('b')" @touchend.prevent="releaseTouchButton('b')" @touchcancel.prevent="releaseTouchButton('b')">B</button>
+					<button data-btn="a" :class="{ active: touchPressed.a }" @touchstart.prevent="pressTouchButton('a')" @touchend.prevent="releaseTouchButton('a')" @touchcancel.prevent="releaseTouchButton('a')">A</button>
+					<button data-btn="start" :class="{ active: touchPressed.start }" @touchstart.prevent="pressTouchButton('start')" @touchend.prevent="releaseTouchButton('start')" @touchcancel.prevent="releaseTouchButton('start')">Start</button>
+					<button data-btn="select" :class="{ active: touchPressed.select }" @touchstart.prevent="pressTouchButton('select')" @touchend.prevent="releaseTouchButton('select')" @touchcancel.prevent="releaseTouchButton('select')">Select</button>
+				</div>
+			</div>
+		</div>
+		<script src="./index.js" type="module"></script>
+		<script src="./alpine.min.js" defer></script>
+	</body>
+</html>

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content="Edit Chip's Challenge DX levels in your browser." />
+		<title>ChipEdit DX</title>
+		<link rel="icon" href="./favicon.ico" />
+		<link rel="stylesheet" href="./edit.css" />
+	</head>
+	<body>
+		<div id="root" x-data="chipEditor()" x-init="init()">
+			<canvas
+				id="game"
+				x-ref="canvas"
+				@contextmenu.prevent
+				@pointerdown="onPointerDown($event)"
+				@pointermove="onPointerMove($event)"
+				@pointerup="onPointerUp($event)"
+				@pointercancel="onPointerCancel($event)"
+			></canvas>
+			<header id="toolbar" @keydown="onToolbarKeyDown($event)">
+				<div id="brand">ChipEdit DX</div>
+				<div class="tool-group">
+					<button type="button" @click="runToolbarCommand('open')" title="Open level JSON (F2)">Open</button>
+					<button type="button" @click="runToolbarCommand('save')" title="Download level JSON (F5)">Save</button>
+					<button type="button" @click="runToolbarCommand('share')" title="Create a playable share URL">Share</button>
+				</div>
+				<div class="tool-group">
+					<button type="button" @click="runToolbarCommand('play')" title="Playtest (Enter)" x-text="editorPlaying ? 'Edit' : 'Play'"></button>
+					<button type="button" :disabled="isToolbarActionDisabled('undo')" @click="runToolbarCommand('undo')" title="Undo (U)">Undo</button>
+					<button type="button" :disabled="isToolbarActionDisabled('redo')" @click="runToolbarCommand('redo')" title="Redo (Y)">Redo</button>
+				</div>
+				<div class="tool-group">
+					<button type="button" :class="{ active: activeTool === 'terrain' }" :aria-pressed="activeTool === 'terrain'" :disabled="isToolbarActionDisabled('terrain')" @click="runToolbarCommand('terrain')" title="Terrain tool (T)">Terrain</button>
+					<button type="button" :class="{ active: activeTool === 'entity' }" :aria-pressed="activeTool === 'entity'" :disabled="isToolbarActionDisabled('entity')" @click="runToolbarCommand('entity')" title="Entity tool (E)">Entity</button>
+					<button type="button" :class="{ active: activeTool === 'connection' }" :aria-pressed="activeTool === 'connection'" :disabled="isToolbarActionDisabled('connection')" @click="runToolbarCommand('connection')" title="Connection tool (C)">Connect</button>
+					<button type="button" :class="{ active: activeTool === 'ice' }" :aria-pressed="activeTool === 'ice'" :disabled="isToolbarActionDisabled('ice')" @click="runToolbarCommand('ice')" title="Ice path tool (I)">Ice</button>
+					<button type="button" :class="{ active: activeTool === 'force' }" :aria-pressed="activeTool === 'force'" :disabled="isToolbarActionDisabled('force')" @click="runToolbarCommand('force')" title="Force path tool (R)">Force</button>
+					<button type="button" :class="{ active: activeTool === 'order' }" :aria-pressed="activeTool === 'order'" :disabled="isToolbarActionDisabled('order')" @click="runToolbarCommand('order')" title="Entity order tool (O)">Order</button>
+					<button type="button" :class="{ active: activeTool === 'sample' }" :aria-pressed="activeTool === 'sample'" :disabled="isToolbarActionDisabled('sample')" @click="runToolbarCommand('sample')" title="Sample tool (Q)">Sample</button>
+					<button type="button" :class="{ active: activeTool === 'rotate' }" :aria-pressed="activeTool === 'rotate'" :disabled="isToolbarActionDisabled('rotate')" @click="runToolbarCommand('rotate')" title="Rotate tool">Rotate</button>
+					<button type="button" :class="{ active: activeTool === 'delete' }" :aria-pressed="activeTool === 'delete'" :disabled="isToolbarActionDisabled('delete')" @click="runToolbarCommand('delete')" title="Delete tool">Delete</button>
+					<button type="button" :class="{ active: activeTool === 'pan' }" :aria-pressed="activeTool === 'pan'" :disabled="isToolbarActionDisabled('pan')" @click="runToolbarCommand('pan')" title="Toggle pan tool">Pan</button>
+					<button type="button" :disabled="isToolbarActionDisabled('zoom-out')" @click="runToolbarCommand('zoom-out')" title="Zoom out">-</button>
+					<button type="button" :disabled="isToolbarActionDisabled('zoom-in')" @click="runToolbarCommand('zoom-in')" title="Zoom in">+</button>
+				</div>
+				<div class="tool-group">
+					<button type="button" :disabled="isToolbarActionDisabled('meta')" @click="runToolbarCommand('meta')" title="Edit level metadata">Meta</button>
+					<button type="button" class="toolbar-fullscreen" @click="runToolbarCommand('fullscreen')" title="Fullscreen (F)">
+						<span aria-hidden="true">⛶</span>
+						<span>Fullscreen</span>
+					</button>
+				</div>
+				<div id="status" x-text="statusText">Loading...</div>
+			</header>
+			<div id="share-dialog" class="modal" x-cloak x-show="shareDialogVisible" @click.self="closeShareDialog()">
+				<div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="share-title">
+					<div class="modal-head">
+						<div>
+							<div id="share-title">Share Level</div>
+							<div id="share-subtitle">Playable URL using the compressed level payload.</div>
+						</div>
+						<button type="button" class="icon-button" @click="closeShareDialog()" title="Close">x</button>
+					</div>
+					<a id="share-link" x-ref="shareLink" :href="shareUrl || '#'" target="_blank" rel="noopener noreferrer" x-text="shareLinkText"></a>
+					<div class="modal-actions">
+						<button type="button" @click="copyShareUrl()">Copy URL</button>
+						<button type="button" @click="openShareUrl()">Open</button>
+					</div>
+				</div>
+			</div>
+			<div id="touch-controls" :class="{ enabled: touchControlsEnabled }" :aria-hidden="touchControlsEnabled ? 'false' : 'true'">
+				<div
+					class="pad"
+					x-ref="touchPad"
+					aria-hidden="true"
+					@touchstart.prevent="onPadTouchStart($event)"
+					@touchmove.prevent="onPadTouchMove($event)"
+					@touchend.prevent="onPadTouchEnd($event)"
+					@touchcancel.prevent="onPadTouchEnd($event)"
+				>
+					<div class="dir up" :class="{ active: padDir === 'up' }"><span class="dir-glyph">▲</span></div>
+					<div class="dir down" :class="{ active: padDir === 'down' }"><span class="dir-glyph">▼</span></div>
+					<div class="dir left" :class="{ active: padDir === 'left' }"><span class="dir-glyph">◀</span></div>
+					<div class="dir right" :class="{ active: padDir === 'right' }"><span class="dir-glyph">▶</span></div>
+				</div>
+				<div class="cluster">
+					<button type="button" data-btn="b" :class="{ active: touchPressed.b }" @touchstart.prevent="pressTouchButton('b')" @touchend.prevent="releaseTouchButton('b')" @touchcancel.prevent="releaseTouchButton('b')">B</button>
+					<button type="button" data-btn="a" :class="{ active: touchPressed.a }" @touchstart.prevent="pressTouchButton('a')" @touchend.prevent="releaseTouchButton('a')" @touchcancel.prevent="releaseTouchButton('a')">A</button>
+					<button type="button" data-btn="start" :class="{ active: touchPressed.start }" @touchstart.prevent="pressTouchButton('start')" @touchend.prevent="releaseTouchButton('start')" @touchcancel.prevent="releaseTouchButton('start')">Start</button>
+					<button type="button" data-btn="select" :class="{ active: touchPressed.select }" @touchstart.prevent="pressTouchButton('select')" @touchend.prevent="releaseTouchButton('select')" @touchcancel.prevent="releaseTouchButton('select')">Select</button>
+				</div>
+			</div>
+			<input id="file-input" x-ref="fileInput" type="file" accept=".json,application/json" @change="openSelectedFile($event)" />
+		</div>
+		<script src="./edit.js" type="module"></script>
+		<script src="./alpine.min.js" defer></script>
+	</body>
+</html>
