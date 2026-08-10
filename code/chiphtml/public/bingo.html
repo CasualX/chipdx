@@ -4,12 +4,13 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="description" content="Generate and share a Chip's Challenge bingo board for streams and community play." />
-		<meta name="theme-color" content="#080d19" />
+		<meta name="theme-color" content="#001a78" />
 		<meta property="og:type" content="website" />
 		<meta property="og:title" content="Chip's Challenge Bingo" />
 		<meta property="og:description" content="Same challenges, different card: play Chip's Challenge bingo with a streamer or friends." />
 		<title>Chip's Challenge Bingo</title>
-		<link rel="icon" href="./favicon.ico" />
+		<link rel="icon" href="./bingo-favicon.svg" type="image/svg+xml" />
+		<link rel="icon" href="./bingo-favicon.ico" sizes="16x16 32x32 48x48" />
 		<link rel="stylesheet" href="./bingo.css" />
 	</head>
 	<body>
@@ -46,77 +47,160 @@
 		<main class="app-shell" x-data="bingoBoard()" x-init="init()" x-cloak>
 			<header class="site-header">
 				<a class="brand" href="./bingo.html" aria-label="Chip's Challenge Bingo">
-					<span class="brand-mark" aria-hidden="true"><span></span></span>
-					<span><strong>Chip's Challenge</strong><small>Bingo broadcast</small></span>
+					<img class="brand-mark" src="./bingo-favicon.svg" alt="" width="32" height="32" />
+					<span><strong>Chip's Challenge</strong><small>Bingo board</small></span>
 				</a>
 				<a class="play-link" href="./">Play Chip's Challenge DX <span aria-hidden="true">→</span></a>
 			</header>
 
 			<section class="landing" x-show="ready && !hasBoard">
-				<div class="landing-copy">
-					<p class="eyebrow">Chip's Challenge DX</p>
-					<h1>Stream bingo.<br /><em>Ready when you are.</em></h1>
-					<p class="seed-error" x-show="seedError" x-text="seedError" role="alert"></p>
-					<button class="primary-action" type="button" @click="generateBoard()">
-						<span class="button-tile" aria-hidden="true">+</span>
-						<span><strong>Generate board</strong></span>
-					</button>
-				</div>
-				<div class="landing-preview" aria-hidden="true">
-					<div class="preview-card preview-one"><span>COMMON</span><svg viewBox="0 0 64 64"><use href="#tile-hint"></use></svg><b>Chat spots it first</b></div>
-					<div class="preview-card preview-two"><span>RARE</span><svg viewBox="0 0 64 64"><use href="#tile-monster"></use></svg><b>Monster mayhem</b></div>
-					<div class="preview-card preview-three"><span>EPIC</span><svg viewBox="0 0 64 64"><use href="#tile-timer"></use></svg><b>Exactly 1 second</b></div>
+				<div class="bingo-window landing-window">
+					<button class="window-help" type="button" title="How to play" aria-label="How to play" @click="$refs.helpDialog.showModal()">?</button>
+					<section class="game-heading landing-heading">
+						<h1><span>Chip's Challenge</span><em>Bingo</em></h1>
+						<div class="heading-controls landing-controls">
+							<p class="seed-error" x-show="seedError" x-text="seedError" role="alert"></p>
+							<div class="heading-actions">
+								<button class="primary-action compact" type="button" @click="generateBoard()">Generate board</button>
+							</div>
+						</div>
+					</section>
+
+					<section class="board-wrap landing-board-preview" aria-label="Example bingo tiles">
+						<div class="bingo-letters" aria-hidden="true">
+							<span>B</span><span>I</span><span>N</span><span>G</span><span>O</span>
+						</div>
+						<div class="bingo-grid">
+							<div class="bingo-square rarity-common">
+								<span class="rarity-label">01</span>
+								<span class="square-art" aria-hidden="true"><svg viewBox="0 0 64 64"><use href="#tile-hint"></use></svg></span>
+								<span class="square-text">Chat spots the solution first</span>
+							</div>
+							<div class="bingo-square rarity-uncommon">
+								<span class="rarity-label">02</span>
+								<span class="square-art" aria-hidden="true"><svg viewBox="0 0 64 64"><use href="#tile-lock"></use></svg></span>
+								<span class="square-text">Use a key on the wrong door</span>
+							</div>
+							<div class="bingo-square rarity-free free">
+								<span class="rarity-label">FREE</span>
+								<span class="square-art" aria-hidden="true"><svg viewBox="0 0 64 64"><use href="#tile-free"></use></svg></span>
+								<span class="square-text">CHIP!</span>
+							</div>
+							<div class="bingo-square rarity-rare">
+								<span class="rarity-label">04</span>
+								<span class="square-art" aria-hidden="true"><svg viewBox="0 0 64 64"><use href="#tile-timer"></use></svg></span>
+								<span class="square-text">Finish with under 10 seconds left</span>
+							</div>
+							<div class="bingo-square rarity-epic">
+								<span class="rarity-label">05</span>
+								<span class="square-art" aria-hidden="true"><svg viewBox="0 0 64 64"><use href="#tile-timer"></use></svg></span>
+								<span class="square-text">Finish with exactly 1 second left</span>
+							</div>
+						</div>
+						<div class="card-actions" aria-hidden="true"></div>
+					</section>
 				</div>
 			</section>
 
 			<template x-if="ready && hasBoard">
 				<div class="game-view">
-					<section class="game-heading">
-						<div>
-							<p class="eyebrow">Board <span class="seed-pill" x-text="boardSeed"></span></p>
-							<h1>Chip's Challenge <em>Bingo</em></h1>
-						</div>
-						<div class="heading-actions">
-							<button class="secondary-action" type="button" @click="generateBoard()">New board</button>
-							<button class="primary-action compact" type="button" @click="copyInvite()">
-								<span x-text="copied ? 'Link copied!' : 'Copy invite link'"></span>
-							</button>
-						</div>
-					</section>
+					<div class="bingo-window">
+						<button class="window-help" type="button" title="How to play" aria-label="How to play" @click="$refs.helpDialog.showModal()">?</button>
+						<section class="game-heading">
+							<h1><span>Chip's Challenge</span><em>Bingo</em></h1>
+							<div class="heading-controls">
+								<div class="heading-actions">
+									<button class="secondary-action" type="button" @click="generateBoard()">New board</button>
+									<button class="primary-action compact" type="button" @click="copyInvite()">
+										<span x-text="copyFeedback || 'Copy invite link'"></span>
+									</button>
+								</div>
+							</div>
+						</section>
 
-					<section class="board-wrap" aria-label="Bingo card">
-						<div class="bingo-status" :class="{ visible: isBingo }" role="status" aria-live="polite">
-							<span x-show="isBingo" aria-hidden="true">★</span>
-							<strong x-text="isBingo ? bingoMessage : 'Mark a full row, column, or diagonal'"></strong>
-							<span x-show="isBingo" aria-hidden="true">★</span>
-						</div>
+						<section class="board-wrap" aria-label="Bingo card">
+							<div class="bingo-letters" :class="{ 'has-bingo': isBingo }" aria-hidden="true">
+								<span aria-hidden="true">B</span><span aria-hidden="true">I</span><span aria-hidden="true">N</span><span aria-hidden="true">G</span><span aria-hidden="true">O</span>
+							</div>
+							<span class="visually-hidden" role="status" aria-atomic="true" x-text="isBingo ? 'Bingo!' : ''"></span>
 
-						<div class="bingo-grid" :class="{ 'has-bingo': isBingo }">
-							<template x-for="(square, index) in squares" :key="square.id">
-								<button
-									class="bingo-square"
-									type="button"
-									:class="'rarity-' + square.rarity + (isMarked(square) ? ' marked' : '') + (square.free ? ' free' : '') + (isWinningSquare(index) ? ' winning-square' : '')"
-									:disabled="square.free"
-									@click="toggleSquare(square)"
-									:aria-pressed="square.free ? null : (isMarked(square) ? 'true' : 'false')"
-									:aria-label="square.free ? 'CHIP! Free center square' : square.text + ', ' + square.rarity + (isMarked(square) ? ', marked' : ', not marked')"
-								>
-									<span class="rarity-label" x-text="square.free ? 'FREE' : square.rarity"></span>
-									<span class="square-art" aria-hidden="true"><svg viewBox="0 0 64 64"><use :href="'#tile-' + square.icon"></use></svg></span>
-									<span class="square-text" x-text="square.text"></span>
-								</button>
-							</template>
-						</div>
+							<div class="bingo-grid">
+								<template x-for="(square, index) in squares" :key="square.id">
+									<button
+										class="bingo-square"
+										type="button"
+										:class="squareClasses(square)"
+										:disabled="square.free"
+										@click="toggleSquare(square)"
+										:aria-pressed="square.free ? null : isMarked(square)"
+										:aria-label="square.free ? 'CHIP! Free center square' : square.text + ', ' + square.rarity + (isMarked(square) ? ', marked' : ', not marked')"
+									>
+										<span class="rarity-label" x-text="square.free ? 'FREE' : String(index + 1).padStart(2, '0')"></span>
+										<span class="square-art" aria-hidden="true"><svg viewBox="0 0 64 64"><use :href="'#tile-' + square.icon"></use></svg></span>
+										<span class="square-text" x-text="square.text"></span>
+									</button>
+								</template>
+							</div>
 
-						<div class="card-actions">
-							<button type="button" @click="clearProgress()" :disabled="markedIds.length === 0">Clear marks</button>
-							<span aria-hidden="true"></span>
-							<button type="button" @click="newPlayerCard()">Reshuffle card</button>
-						</div>
-					</section>
+							<div class="card-actions">
+								<button type="button" @click="clearProgress()" :disabled="markedIds.length === 0">Clear marks</button>
+								<span aria-hidden="true"></span>
+								<button type="button" @click="newPlayerCard()">Reshuffle card</button>
+							</div>
+						</section>
+					</div>
 				</div>
 			</template>
+
+			<dialog
+				class="help-dialog"
+				x-ref="helpDialog"
+				aria-labelledby="help-title"
+				@click="if ($event.target === $refs.helpDialog) $refs.helpDialog.close()"
+			>
+				<header class="help-titlebar">
+					<strong id="help-title">Chip's Challenge Bingo Help</strong>
+					<button type="button" aria-label="Close help" title="Close" @click="$refs.helpDialog.close()">×</button>
+				</header>
+				<div class="help-content">
+					<section class="help-objective">
+						<h2>Object of the game</h2>
+						<p>Light five squares in a straight line: across, down, or corner to corner. The CHIP! square in the middle is free.</p>
+					</section>
+
+					<div class="help-modes">
+						<fieldset>
+							<legend>Solo play</legend>
+							<ol>
+								<li>Press <b>Generate board</b>, then start playing Chip's Challenge.</li>
+								<li>When you do or encounter what a square says, click it to turn it on.</li>
+								<li>Complete any line to make BINGO light up.</li>
+							</ol>
+							<p class="help-note">A “streamer says” square counts when you say it. Nobody has to hear you.</p>
+						</fieldset>
+
+						<fieldset>
+							<legend>Streamer + viewers</legend>
+							<ol>
+								<li>Generate a board, then press <b>Copy invite link</b>.</li>
+								<li>Share the link with your viewers before the run begins.</li>
+								<li>Call out events as they happen so viewers can mark their cards.</li>
+							</ol>
+							<p class="help-note">Everyone gets the same squares in a different arrangement.</p>
+						</fieldset>
+					</div>
+
+					<div class="help-tips">
+						<p><b>Wrong mark?</b> Click the square again.</p>
+						<p><b>Reshuffle card</b> changes your layout and clears your marks.</p>
+						<p><b>New board</b> chooses a new set of challenges.</p>
+					</div>
+
+					<form method="dialog" class="help-actions">
+						<button class="help-ok" type="submit" autofocus>OK</button>
+					</form>
+				</div>
+			</dialog>
 		</main>
 
 		<script src="./bingo.js" type="module"></script>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+	<!-- Pixel-snapped for a clear bingo-card silhouette at 16px. -->
+	<rect width="16" height="16" rx="2" fill="#0c1722"/>
+	<path d="M5 0h1v2H5zm2 0h2v2H7zm3 0h1v2h-1zM5 14h1v2H5zm2 0h2v2H7zm3 0h1v2h-1zM0 5h2v1H0zm0 2h2v2H0zm0 3h2v1H0zm14-5h2v1h-2zm0 2h2v2h-2zm0 3h2v1h-2z" fill="#54dff0"/>
+	<rect x="2" y="2" width="12" height="12" rx="1" fill="#9cecf4"/>
+	<rect x="3" y="3" width="10" height="10" fill="#176b7d"/>
+	<path d="M4 4h2v2H4zm3 0h2v2H7zm3 0h2v2h-2zM4 7h2v2H4zm6 0h2v2h-2zM4 10h2v2H4zm3 0h2v2H7zm3 0h2v2h-2z" fill="#c4f4f3"/>
+	<rect x="7" y="7" width="2" height="2" fill="#f4df42"/>
+</svg>

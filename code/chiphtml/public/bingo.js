@@ -9,7 +9,6 @@ const LINES = [
 
 const CARD_POOL = {
 	common: [
-		card("restart", "Restart when the level was already solved", "exit", "restart"),
 		card("hidden-chip", "Find a chip hidden under a block", "chip", "chips"),
 		card("forgotten-chip", "Return to an earlier area for a missed chip", "chip", "chips"),
 		card("fire-boots", "Fire ahead before finding fire boots", "fire", "items"),
@@ -28,14 +27,16 @@ const CARD_POOL = {
 		card("force-random", "A random force floor sends Chip the wrong way", "map", "movement"),
 		card("recessed-return", "Take the wrong path through a recessed wall", "wall", "movement"),
 		card("hidden-passage", "Walk through a fake blue wall", "wall", "secrets"),
-		card("wall-search", "Walk into walls looking for a secret", "wall", "secrets"),
+		card("hint-return", "Return to a hint tile after getting stuck", "hint", "solve"),
 		card("cramped", "Level is mostly one-tile-wide corridors", "map", "level"),
 		card("maze", "Maze level", "map", "level"),
 		card("sokoban", "Sokoban-heavy level", "block", "level"),
 		card("pure-puzzle", "Puzzle level with no moving monsters", "hint", "level"),
 		card("pure-action", "Monster gauntlet", "monster", "level"),
+		card("blob-rng", "Blob RNG level", "monster", "level"),
 		card("monster-chase", "A monster chases Chip through the level", "monster", "level"),
-		card("monster-parade", "Monsters arrive in a long orderly parade", "monster", "level"),
+		card("pink-ball-dodge", "Pink ball dodge section", "bomb", "movement"),
+		card("monster-parade", "Monster parade: a line of monsters follows a fixed route", "monster", "level"),
 		card("short", "Finish a level in under one minute", "timer", "level"),
 		card("accidental", "Solve something accidentally", "hint", "solve"),
 		card("what-button", "“What does this button do?”", "button", "streamer"),
@@ -52,6 +53,7 @@ const CARD_POOL = {
 		card("two-streak", "Complete two levels without dying", "heart", "finish"),
 		card("toggle-puzzle", "Toggle-wall puzzle", "toggle", "buttons"),
 		card("spare-key", "Finish with an unused key", "key", "items"),
+		card("thief", "Lose boots to a thief", "thief", "items"),
 		card("socket-short", "Reach the socket with chips still needed", "socket", "chips"),
 		card("exit-wrong", "Exit is visible from the start but inaccessible", "exit", "chips"),
 		card("tele-unexpected", "Teleport somewhere unexpected", "teleport", "movement"),
@@ -62,10 +64,11 @@ const CARD_POOL = {
 		card("predict-right", "Streamer predicts what happens next and gets it right", "hint", "streamer"),
 		card("predict-wrong", "Streamer predicts what happens next and gets it wrong", "hint", "streamer"),
 		card("blame-game", "Streamer blames the game", "hint", "streamer"),
-		card("teaches-mechanic", "A hint explains the level's central trick", "hint", "rules"),
+		card("teaches-mechanic", "A hint explains the level's gimmick", "hint", "rules"),
 		card("one-screen", "One-screen level", "map", "level"),
 	],
 	uncommon: [
+		card("restart", "Restart when the level was already solved", "exit", "restart"),
 		card("chip-button", "Chip holds a button for something else", "button", "buttons"),
 		card("brown-button", "Free a trapped monster with a brown button", "trap", "buttons"),
 		card("blue-button", "Reverse the tanks at least three times", "tank", "buttons"),
@@ -85,11 +88,13 @@ const CARD_POOL = {
 		card("bombed", "Step on a bomb", "bomb", "death"),
 		card("drown", "Drown", "water", "death"),
 		card("burn", "Burn in fire", "fire", "death"),
+		card("ice-offscreen-death", "Slide on ice into an off-screen hazard and die", "ice", "death"),
+		card("force-offscreen-death", "Ride force floors into an off-screen hazard and die", "map", "death"),
+		card("misinput-death", "Die because of an accidental misinput", "heart", "death"),
 		card("same-mistake", "Make the exact same mistake twice", "exit", "restart"),
 		card("realize", "Realize the solution right after restarting", "hint", "restart"),
 		card("itemswapper", "Itemswapper: one item leads to the next", "key", "items"),
-		card("wrong-door", "Use a key on the wrong door", "lock", "items"),
-		card("thief", "Lose boots to a thief", "thief", "items"),
+		card("wrong-lock", "Use a key on the wrong lock", "lock", "items"),
 		card("monster-button", "Use a monster to hold a button", "button", "monsters"),
 		card("clone", "Clone two different monster types", "monster", "monsters"),
 		card("trap-regret", "Release a trap and immediately regret it", "trap", "monsters"),
@@ -97,22 +102,23 @@ const CARD_POOL = {
 		card("monster-ruin", "A monster blocks the route to the exit", "monster", "monsters"),
 		card("monster-needed", "Kill a monster that was needed later", "monster", "monsters"),
 		card("teeth-chase", "Lead Teeth on a chase around an obstacle", "monster", "monsters"),
-		card("bomb-monster", "Lure a monster onto a bomb", "bomb", "monsters"),
+		card("teeth-dodge", "Slip past Teeth by timing their half-speed movement", "timer", "movement"),
 		card("crowd-dodge", "Dodge through a crowded monster section", "monster", "movement"),
 		card("ten-minutes", "Level takes 10+ minutes", "timer", "level"),
 		card("no-idea", "Streamer says “I don't know why that worked”", "hint", "streamer"),
 		card("lookup-solution", "Streamer looks up the solution", "hint", "streamer"),
 		card("ignore-chat", "Streamer ignores chat's correct solution", "hint", "chat"),
 		card("blame-rules", "Streamer blames the ruleset", "hint", "rules"),
-		card("designer-hates", "Streamer says the designer hates them", "bomb", "streamer"),
+		card("designer-hates", "Streamer says the level designer hates them", "bomb", "streamer"),
 		card("elegant", "Streamer calls the puzzle elegant", "heart", "streamer"),
 		card("counting", "Streamer counts tiles, moves, or monsters out loud", "chip", "streamer"),
 		card("item-early", "Take an item too early", "boots", "items"),
-		card("door-regret", "Open a door you wish you'd left closed", "lock", "items"),
+		card("lock-regret", "Open a lock you wish you'd left closed", "lock", "items"),
 		card("optional", "Dismiss an item as optional, then return for it", "key", "items"),
-		card("hidden-dirt-item", "Find a hidden item", "key", "secrets"),
+		card("hidden-item", "Find a hidden item", "key", "secrets"),
 		card("block-slide", "Send a block sliding across ice or force floors", "block", "blocks"),
 		card("block-flick", "Push a block off a tile Chip cannot enter", "block", "blocks"),
+		card("block-haul", "Push blocks one by one along the same increasingly long route", "block", "blocks"),
 		card("toggle-stranded", "Toggle walls strand Chip on the wrong side", "toggle", "buttons"),
 		card("random-retry", "Restart because a random element went badly", "timer", "restart"),
 		card("five-attempts", "Call a level easy, then need 5+ attempts", "timer", "restart"),
@@ -124,8 +130,10 @@ const CARD_POOL = {
 	rare: [
 		card("green-button", "A monster presses a green button for Chip", "toggle", "buttons"),
 		card("stuck-trap", "Get permanently stuck in a bear trap", "trap", "restart"),
+		card("force-softlock", "Get softlocked on force floors", "map", "restart"),
 		card("not-cooked", "Think the level is cooked, then salvage it", "lock", "restart"),
 		card("hot-block", "Reveal fire under a hot block", "fire", "blocks"),
+		card("self-crush", "Get crushed by a block after pushing it yourself", "block", "death"),
 		card("miss-chip", "A chip is hidden under something other than a block", "chip", "chips"),
 		card("writing", "Level spells a word in tiles", "map", "level"),
 		card("huge-chips", "100+ chips required", "chip", "level"),
@@ -139,13 +147,13 @@ const CARD_POOL = {
 		card("boots-hazard", "Lose boots, then walk into that hazard", "thief", "items"),
 		card("partial-post", "Use partial posting to reroute a teleport", "hint", "rules"),
 		card("button-chain", "One monster presses three different buttons", "button", "monsters"),
-		card("fake-exit", "Step on a fake exit", "exit", "community"),
+		card("fake-exit", "Discover a fake exit", "exit", "community"),
 		card("bust", "Use a bust that skips an intended section", "map", "community"),
 		card("first-try", "Say “This looks hard,” then finish first try", "exit", "finish"),
 		card("under-ten", "Finish with under 10 seconds left", "timer", "finish"),
 		card("ruleset", "Level plays differently under Lynx and MS rules", "toggle", "rules"),
 		card("never-seen", "Streamer says “I've never seen that before”", "hint", "streamer"),
-		card("impossible-clear", "Say “impossible,” then clear it on the same attempt", "exit", "streamer"),
+		card("impossible-clear", "Claim the level is impossible then clear it on the same attempt", "exit", "streamer"),
 		card("full-inventory", "Hold all four boots and all four key colors at once", "key", "items"),
 	],
 	epic: [
@@ -224,12 +232,47 @@ function loadSession(seed) {
 	try {
 		const value = JSON.parse(window.localStorage.getItem(storageKey(seed)) || "null");
 		if (!value || typeof value.shuffleSeed !== "string" || !Array.isArray(value.markedIds)) return null;
-		return { shuffleSeed: value.shuffleSeed, markedIds: value.markedIds.filter(id => typeof id === "string") };
+		const shuffleSeed = normalizeSeed(value.shuffleSeed);
+		if (!shuffleSeed) return null;
+		return {
+			shuffleSeed,
+			markedIds: [...new Set(value.markedIds.filter(id => typeof id === "string"))],
+		};
 	} catch (_error) {
 		return null;
 	}
-
 }
+
+async function copyText(value) {
+	if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+		try {
+			await navigator.clipboard.writeText(value);
+			return true;
+		} catch (_error) {
+			// Fall back to the selection-based API below.
+		}
+	}
+
+	const copyField = document.createElement("textarea");
+	copyField.value = value;
+	copyField.setAttribute("readonly", "");
+	copyField.style.position = "fixed";
+	copyField.style.opacity = "0";
+
+	try {
+		document.body.appendChild(copyField);
+		copyField.select();
+		return document.execCommand("copy");
+	} catch (_error) {
+		return false;
+	} finally {
+		copyField.remove();
+	}
+}
+
+window.addEventListener("hashchange", () => {
+	window.location.reload();
+});
 
 window.bingoBoard = function bingoBoard() {
 	return {
@@ -239,7 +282,7 @@ window.bingoBoard = function bingoBoard() {
 		playerSeed: "",
 		squares: [],
 		markedIds: [],
-		copied: false,
+		copyFeedback: "",
 		seedError: "",
 		copyTimer: null,
 
@@ -273,26 +316,8 @@ window.bingoBoard = function bingoBoard() {
 			return url.href;
 		},
 
-		get completedLineIndexes() {
-			return LINES.map((line, index) => line.every(position => this.isMarked(this.squares[position])) ? index : -1).filter(index => index >= 0);
-		},
-
-		get completedLines() {
-			return this.completedLineIndexes.length;
-		},
-
 		get isBingo() {
-			return this.completedLines > 0;
-		},
-
-		get bingoMessage() {
-			if (!this.isBingo) return "";
-			const labels = this.completedLineIndexes.map(index => {
-				if (index < 5) return `Row ${index + 1}`;
-				if (index < 10) return `Column ${index - 4}`;
-				return index === 10 ? "Diagonal ↘" : "Diagonal ↙";
-			});
-			return `BINGO — ${labels.join(" + ")}`;
+			return LINES.some(line => line.every(position => this.isMarked(this.squares[position])));
 		},
 
 		buildSquares() {
@@ -325,8 +350,12 @@ window.bingoBoard = function bingoBoard() {
 			return Boolean(square && (square.free || this.markedIds.includes(square.id)));
 		},
 
-		isWinningSquare(position) {
-			return this.completedLineIndexes.some(index => LINES[index].includes(position));
+		squareClasses(square) {
+			return [
+				`rarity-${square.rarity}`,
+				!square.free && this.isMarked(square) ? "marked" : "",
+				square.free ? "free" : "",
+			].filter(Boolean).join(" ");
 		},
 
 		toggleSquare(square) {
@@ -339,26 +368,12 @@ window.bingoBoard = function bingoBoard() {
 
 		generateBoard() {
 			window.location.hash = `?board=${encodeURIComponent(randomSeed())}`;
-			window.location.reload();
 		},
 
 		async copyInvite() {
-			try {
-				await navigator.clipboard.writeText(this.inviteUrl);
-			} catch (_error) {
-				const copyField = document.createElement("textarea");
-				copyField.value = this.inviteUrl;
-				copyField.setAttribute("readonly", "");
-				copyField.style.position = "fixed";
-				copyField.style.opacity = "0";
-				document.body.appendChild(copyField);
-				copyField.select();
-				document.execCommand("copy");
-				copyField.remove();
-			}
-			this.copied = true;
+			this.copyFeedback = await copyText(this.inviteUrl) ? "Link copied!" : "Copy failed";
 			window.clearTimeout(this.copyTimer);
-			this.copyTimer = window.setTimeout(() => { this.copied = false; }, 1800);
+			this.copyTimer = window.setTimeout(() => { this.copyFeedback = ""; }, 1800);
 		},
 
 		clearProgress() {
@@ -386,6 +401,10 @@ window.bingoBoard = function bingoBoard() {
 			} catch (_error) {
 				// Private browsing or locked-down storage: the card still works for this tab.
 			}
+		},
+
+		destroy() {
+			window.clearTimeout(this.copyTimer);
 		},
 	};
 };
