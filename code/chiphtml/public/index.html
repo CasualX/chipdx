@@ -140,10 +140,10 @@
 					@touchend.prevent="onPadTouchEnd($event)"
 					@touchcancel.prevent="onPadTouchEnd($event)"
 				>
-					<div class="dir up" :class="{ active: padDir === 'up' }"><span class="dir-glyph">▲</span></div>
-					<div class="dir down" :class="{ active: padDir === 'down' }"><span class="dir-glyph">▼</span></div>
-					<div class="dir left" :class="{ active: padDir === 'left' }"><span class="dir-glyph">◀</span></div>
-					<div class="dir right" :class="{ active: padDir === 'right' }"><span class="dir-glyph">▶</span></div>
+					<div class="dir up" :class="{ active: padDir === 'up' }"><svg class="dir-glyph" viewBox="0 0 24 24"><path d="M12 4 20 18H4Z" /></svg></div>
+					<div class="dir down" :class="{ active: padDir === 'down' }"><svg class="dir-glyph" viewBox="0 0 24 24"><path d="m12 20 8-14H4Z" /></svg></div>
+					<div class="dir left" :class="{ active: padDir === 'left' }"><svg class="dir-glyph" viewBox="0 0 24 24"><path d="m4 12 14-8v16Z" /></svg></div>
+					<div class="dir right" :class="{ active: padDir === 'right' }"><svg class="dir-glyph" viewBox="0 0 24 24"><path d="m20 12-14 8V4Z" /></svg></div>
 				</div>
 				<div class="cluster">
 					<button data-btn="b" :class="{ active: touchPressed.b }" @touchstart.prevent="pressTouchButton('b')" @touchend.prevent="releaseTouchButton('b')" @touchcancel.prevent="releaseTouchButton('b')">B</button>
