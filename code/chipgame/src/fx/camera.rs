@@ -205,7 +205,7 @@ impl PlayCamera {
 	/// Keeps the logical camera source inside the level, inset by the active play vision range.
 	fn clamp_target(&self, target: Vec2f) -> Vec2f {
 		let margin = match self.zoom_mode {
-			chipty::ZoomMode::Classic | chipty::ZoomMode::Wide => self.vision_half_extent,
+			chipty::ZoomMode::Classic | chipty::ZoomMode::Wide => 0.0,// self.vision_half_extent,
 			chipty::ZoomMode::Fit | chipty::ZoomMode::Editor => 0.0,
 		};
 		let inset = self.bounds.inset(margin);
