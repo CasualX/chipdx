@@ -97,10 +97,14 @@ impl AppStuff {
 			.make_current(&surface)
 			.expect("Failed to make GL context current");
 
-		if config.vsync {
-			if let Err(err) = surface.set_swap_interval(&context, SwapInterval::Wait(NonZeroU32::new(1).unwrap())) {
-				eprintln!("Failed to enable vsync: {err}");
-			}
+		let swap_interval = if config.vsync {
+			SwapInterval::Wait(NonZeroU32::new(1).unwrap())
+		}
+		else {
+			SwapInterval::DontWait
+		};
+		if let Err(err) = surface.set_swap_interval(&context, swap_interval) {
+			eprintln!("Failed to set swap interval: {err}");
 		}
 
 		// Load GL function pointers
@@ -178,6 +182,8 @@ fn main() {
 	let mut last_frame_start = time::Instant::now();
 	let mut tick_budget = time::Duration::ZERO;
 	let mut fullscreen_toggled = false;
+	let render_frame_time = time::Duration::from_nanos(1_000_000_000u64.div_ceil(config.max_fps.max(1) as u64));
+	let mut next_frame_start = time::Instant::now();
 
 	let event_loop = winit::event_loop::EventLoop::new().expect("Failed to create event loop");
 
@@ -246,6 +252,12 @@ fn main() {
 				WindowEvent::RedrawRequested => {
 					if let Some(app) = app.as_deref_mut() {
 						let frame_start = time::Instant::now();
+						// Window events may request extra redraws; enforce the cap on every path.
+						if frame_start < next_frame_start {
+							return;
+						}
+						// Schedule from the actual start so late frames never cause catch-up bursts.
+						next_frame_start = frame_start + render_frame_time;
 						let frame_dt = frame_start - last_frame_start;
 						last_frame_start = frame_start;
 
@@ -285,7 +297,10 @@ fn main() {
 			Event::AboutToWait => {
 				fullscreen_toggled = false;
 				if let Some(app) = app.as_deref() {
-					app.window.request_redraw();
+					if time::Instant::now() >= next_frame_start {
+						app.window.request_redraw();
+					}
+					event_loop.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(next_frame_start));
 				}
 			}
 			_ => {}

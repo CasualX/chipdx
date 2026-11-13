@@ -44,6 +44,7 @@ pub struct FontConfig {
 
 pub struct Config {
 	pub vsync: bool,
+	pub max_fps: u32,
 	pub multisampling: u8,
 	pub render_scale: f32,
 	pub post_process: PostProcess,
@@ -68,6 +69,7 @@ impl Config {
 
 		let mut section = Section::General;
 		let mut vsync = false;
+		let mut max_fps = 300;
 		let mut multisampling = 0;
 		let mut render_scale = 1.0f32;
 		let mut post_process = PostProcess::None;
@@ -83,6 +85,7 @@ impl Config {
 					Section::Error => (),
 					Section::General => match key {
 						"VSync" => { if let Ok(v) = value.parse::<bool>() { vsync = v; } }
+						"MaxFPS" => { if let Ok(v) = value.parse::<u32>() { max_fps = v; } }
 						"Multisampling" => { if let Ok(v) = value.parse::<u8>() { multisampling = v; } }
 						"RenderScale" => { if let Ok(v) = value.parse::<f32>() { render_scale = v; } }
 						"PostProcess" => {
@@ -175,6 +178,7 @@ impl Config {
 		Config {
 			multisampling,
 			vsync,
+			max_fps,
 			post_process,
 			sound_fx,
 			music,
