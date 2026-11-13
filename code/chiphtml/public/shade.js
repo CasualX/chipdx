@@ -34,6 +34,9 @@ export function createWasmAPI(canvas, options) {
 	let decoder = new TextDecoder();
 	let encoder = new TextEncoder();
 	let gl = canvas.getContext("webgl2", options);
+	if (!gl) {
+		throw new Error("Unable to create a WebGL 2 context. Check your browser's graphics settings, or close other WebGL tabs and reload.");
+	}
 	// gl.drawingBufferColorSpace = "srgb";
 	// gl.unpackColorSpace = "srgb";
 
