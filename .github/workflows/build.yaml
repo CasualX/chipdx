@@ -24,3 +24,57 @@ jobs:
         name: chipdx-win32
         if-no-files-found: error
         path: target/publish/**
+
+  linux-appimage:
+    runs-on: ubuntu-24.04
+    # The container defines the ABI baseline, independently of the runner OS.
+    container: ubuntu:20.04
+    steps:
+    - name: Checkout Sources
+      uses: actions/checkout@v7
+
+    - name: Install Linux Build Dependencies
+      run: bash packaging/appimage/dependencies.sh
+
+    - name: Install Toolchain
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Build AppImage (glibc 2.31 baseline)
+      run: bash packaging/appimage/build.sh
+
+    - name: Upload AppImage
+      uses: actions/upload-artifact@v7
+      with:
+        name: chipdx-appimage-x86_64
+        if-no-files-found: error
+        path: target/appimage/dist/*
+
+  linux-smoke-test:
+    needs: linux-appimage
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu:20.04', 'ubuntu:22.04', 'ubuntu:24.04', 'debian:12']
+    container: ${{ matrix.os }}
+    steps:
+    - name: Checkout Sources
+      uses: actions/checkout@v7
+
+    - name: Download AppImage
+      uses: actions/download-artifact@v8
+      with:
+        name: chipdx-appimage-x86_64
+        path: appimage
+
+    - name: Install Desktop Runtime for Smoke Test
+      run: |
+        apt-get update
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xvfb xauth libgl1-mesa-dri libglx-mesa0 libegl1
+
+    - name: Verify Checksum and Launch Game Without FUSE
+      run: |
+        cd appimage
+        sha256sum -c ChipDX-x86_64.AppImage.sha256
+        cd ..
+        bash packaging/appimage/smoke-test.sh appimage/ChipDX-x86_64.AppImage

@@ -63,7 +63,13 @@ impl AppStuff {
 				.max_by_key(|c| c.num_samples())
 		}
 
-		let (window, gl_config) = glutin_winit::DisplayBuilder::new()
+		let display_builder = glutin_winit::DisplayBuilder::new();
+		// Mesa's GLX path can lack sRGB configs under Xvfb without GPU devices.
+		// Prefer EGL on Linux, retaining GLX as a fallback.
+		#[cfg(target_os = "linux")]
+		let display_builder = display_builder.with_preference(glutin_winit::ApiPreference::PreferEgl);
+
+		let (window, gl_config) = display_builder
 			.with_window_attributes(Some(window_attributes))
 			.build(event_loop, template, |configs| config_picker(configs).expect("No suitable GL config found"))
 			.expect("Failed to build window and GL config");
@@ -84,7 +90,7 @@ impl AppStuff {
 			gl_display.create_context(&gl_config, &context_attributes)
 		}.expect("Failed to create GL context");
 
-		let attrs = SurfaceAttributesBuilder::<WindowSurface>::new().build(
+		let attrs = SurfaceAttributesBuilder::<WindowSurface>::new().with_srgb(Some(true)).build(
 			raw_window_handle,
 			NonZeroU32::new(size.width.max(1)).unwrap(),
 			NonZeroU32::new(size.height.max(1)).unwrap(),

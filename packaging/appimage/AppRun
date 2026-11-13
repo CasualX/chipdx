@@ -1,0 +1,20 @@
+#!/bin/sh
+set -eu
+
+appdir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+assets="$appdir/usr/share/chipdx"
+userdata="${XDG_DATA_HOME:-$HOME/.local/share}/chipdx"
+mkdir -p "$userdata/save" "$userdata/levelsets"
+
+# Keep mutable files outside the read-only image. Refresh bundled assets on
+# every launch, but preserve the user's configuration and additional levelsets.
+ln -sfn "$assets/data.paks" "$userdata/data.paks"
+for levelset in "$assets"/levelsets/*.paks; do
+    ln -sfn "$levelset" "$userdata/levelsets/$(basename -- "$levelset")"
+done
+if [ ! -e "$userdata/chipdx.ini" ]; then
+    cp -n "$assets/chipdx.ini" "$userdata/chipdx.ini"
+fi
+export LD_LIBRARY_PATH="$appdir/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+cd "$userdata"
+exec "$appdir/usr/bin/chipplay" "$@"

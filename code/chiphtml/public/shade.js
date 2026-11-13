@@ -77,6 +77,7 @@ export function createWasmAPI(canvas, options) {
 		disable(cap) { gl.disable(cap); },
 		scissor(x, y, width, height) { gl.scissor(x, y, width, height); },
 		blendFunc(sfactor, dfactor) { gl.blendFunc(sfactor, dfactor); },
+		blendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha) { gl.blendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha); },
 		blendEquation(mode) { gl.blendEquation(mode); },
 		depthFunc(func) { gl.depthFunc(func); },
 		cullFace(mode) { gl.cullFace(mode); },

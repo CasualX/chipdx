@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Chip's Challenge DX
+Comment=Play Chip's Challenge DX
+Exec=chipplay
+Icon=chipdx
+Categories=Game;LogicGame;
+Terminal=false

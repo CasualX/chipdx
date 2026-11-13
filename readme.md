@@ -55,6 +55,10 @@ Other platforms must be built from source code.
 1. Run `cargo run --release -p publish -- target/publish` from the repository root.
 2. Find the packaged release files in `target/publish`.
 
+For the Linux game AppImage, run the **Build Binaries** GitHub Actions workflow
+and download `chipdx-appimage-x86_64`. See [AppImage build and compatibility notes](packaging/appimage/readme.md)
+for local builds, system requirements, and save locations.
+
 Controls
 --------
 
