@@ -10,6 +10,7 @@ const DEFAULT_TILESET: &str = "data/spritesheet";
 fn main() {
 	let matches = clap::command!()
 		.about("Render a Chip's Challenge level preview to a PNG using software pixel blits")
+		.arg(clap::arg!(--reveal "Reveal hidden entities and draw connection arrows for author review"))
 		.arg(clap::arg!(--json <JSON_PATH> "Path to a level JSON file").value_parser(clap::value_parser!(path::PathBuf)))
 		.arg(clap::arg!(--paks <PAKS_PATH> "Path to a packed levelset .paks").value_parser(clap::value_parser!(path::PathBuf)))
 		.arg(clap::arg!(--dat <DAT_PATH> "Path to a levelset .dat").value_parser(clap::value_parser!(path::PathBuf)))
@@ -53,7 +54,7 @@ fn main() {
 
 	let tileset = matches.get_one::<path::PathBuf>("tileset").unwrap();
 	let (atlas, sheet) = load_tileset(tileset);
-	let preview = render_preview(&level, &atlas, &sheet);
+	let preview = render_preview(&level, &atlas, &sheet, matches.get_flag("reveal"));
 	preview.save_file_png(output).unwrap_or_else(|err| panic!("save {}: {err}", output.display()));
 	println!("Wrote {}", output.display());
 }
@@ -129,7 +130,7 @@ fn with_extension(base: &path::Path, extension: &str) -> path::PathBuf {
 	path
 }
 
-fn render_preview(level: &chipty::LevelDto, atlas: &atlas::Atlas<chipty::SpriteId>, sheet: &Image) -> Image {
+fn render_preview(level: &chipty::LevelDto, atlas: &atlas::Atlas<chipty::SpriteId>, sheet: &Image, reveal: bool) -> Image {
 	let tile_size = sprite_frame(atlas, chipty::SpriteId::Floor).rect.width;
 	let width = level.map.width;
 	let height = level.map.height;
@@ -145,15 +146,72 @@ fn render_preview(level: &chipty::LevelDto, atlas: &atlas::Atlas<chipty::SpriteI
 			let terrain = level.map.legend.get(tile).copied()
 				.unwrap_or_else(|| panic!("map cell {x},{y} references missing tile {tile}"));
 			blit_sprite(atlas, sheet, &mut preview, terrain_sprite(terrain), Point2i(x, y) * tile_size);
+			// Fire is an effect over the floor in the game renderer, so draw both layers.
+			if terrain == chipty::Terrain::Fire {
+				blit_sprite(atlas, sheet, &mut preview, chipty::SpriteId::FireA, Point2i(x, y) * tile_size);
+			}
 		}
 	}
 
-	for entity in &level.entities {
-		let sprite = entity_sprite(entity.kind, entity.face_dir);
-		blit_sprite(atlas, sheet, &mut preview, sprite, entity.pos * tile_size);
+	if reveal {
+		for entity in &level.entities {
+			let sprite = entity_sprite(entity.kind, entity.face_dir);
+			blit_sprite(atlas, sheet, &mut preview, sprite, entity.pos * tile_size);
+		}
+	} else {
+		// Use the engine's actual visibility rules: dirt, blocks, locks, and walls
+		// can conceal entities. Author previews must not reveal puzzle supplies.
+		let mut state = chipcore::GameState::default();
+		state.parse(level, chipcore::RngSeed::Manual(0));
+		for entity in state.ents.iter().filter(|e| e.flags & chipcore::EF_HIDDEN == 0) {
+			let sprite = entity_sprite(entity.kind, entity.face_dir);
+			blit_sprite(atlas, sheet, &mut preview, sprite, entity.pos * tile_size);
+		}
+		for entity in state.templates.values() {
+			let sprite = entity_sprite(entity.kind, entity.face_dir);
+			blit_sprite(atlas, sheet, &mut preview, sprite, entity.pos * tile_size);
+		}
 	}
 
+	if reveal {
+		draw_connections(&mut preview, level, tile_size);
+	}
 	preview
+}
+
+fn draw_arrow(image: &mut Image, source: Vec2i, dest: Vec2i, tile_size: i32, color: [u8; 4]) {
+	let (direction, length) = (dest - source).cast::<f32>().norm_len();
+	if length == 0.0 { return; }
+	let tile = tile_size as f32;
+	let center = |p: Vec2i| (p.cast::<f32>() + Vec2f(0.5, 0.5)) * tile;
+	// Keep both endpoint glyphs visible. The arrowhead points at the destination.
+	let inset = tile * 0.32;
+	let start = (center(source) + direction * inset).round().cast();
+	let tip = (center(dest) - direction * inset).round().cast();
+	let head = (tile * 0.24).min((length * tile - 2.0 * inset) * 0.6);
+	let scale = (tile_size / 32).max(1);
+	image.draw_arrow_outline(start, tip, head, scale - 1, 1,
+		|dst, _| alpha_over(dst, color),
+		|dst, _| alpha_over(dst, [15, 20, 28, 235]));
+}
+
+fn draw_connections(image: &mut Image, level: &chipty::LevelDto, tile_size: i32) {
+	let inside = |p: Vec2i| p.x >= 0 && p.y >= 0 && p.x < level.map.width && p.y < level.map.height;
+	for connection in &level.connections {
+		if !inside(connection.src) || !inside(connection.dest) { continue; }
+		let index = (connection.src.y * level.map.width + connection.src.x) as usize;
+		let terrain = level.map.legend[level.map.data[index] as usize];
+		// Match the connection colors used by chipedit's editor renderer.
+		let color = match terrain {
+			chipty::Terrain::GreenButton => [0, 255, 0, 255],
+			chipty::Terrain::RedButton => [255, 0, 0, 255],
+			chipty::Terrain::BrownButton => [128, 128, 0, 255],
+			chipty::Terrain::BlueButton => [0, 0, 255, 255],
+			chipty::Terrain::Teleport => [0, 255, 255, 255],
+			_ => [255, 255, 255, 255],
+		};
+		draw_arrow(image, connection.src, connection.dest, tile_size, color);
+	}
 }
 
 fn terrain_sprite(terrain: chipty::Terrain) -> chipty::SpriteId {

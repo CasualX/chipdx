@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+chipcore = { path = "../../chipcore" }
 chipdat = { path = "../../chipdat" }
 chipty = { path = "../../chipty" }
 clap.workspace = true
