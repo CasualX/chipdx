@@ -86,7 +86,13 @@ impl Config {
 					Section::General => match key {
 						"VSync" => { if let Ok(v) = value.parse::<bool>() { vsync = v; } }
 						"MaxFPS" => { if let Ok(v) = value.parse::<u32>() { max_fps = v; } }
-						"Multisampling" => { if let Ok(v) = value.parse::<u8>() { multisampling = v; } }
+						"Multisampling" => {
+							if let Ok(v) = value.parse::<u8>() {
+								if v == 0 || (v >= 2 && v.is_power_of_two()) {
+									multisampling = v;
+								}
+							}
+						}
 						"RenderScale" => { if let Ok(v) = value.parse::<f32>() { render_scale = v; } }
 						"PostProcess" => {
 							post_process = match value {

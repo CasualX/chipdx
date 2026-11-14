@@ -57,10 +57,11 @@ impl AppStuff {
 			.with_title("ChipEdit")
 			.with_inner_size(size);
 
-		fn config_picker(configs: impl Iterator<Item = glutin::config::Config>) -> Option<glutin::config::Config> {
+		fn config_picker(mut configs: impl Iterator<Item = glutin::config::Config>, samples: u8) -> Option<glutin::config::Config> {
 			configs
-				.filter(|c| c.srgb_capable())
-				.max_by_key(|c| c.num_samples())
+				// Glutin's sample constraint is a minimum; zero leaves it unspecified.
+				// Require the configured count explicitly in both cases.
+				.find(|c| c.srgb_capable() && c.num_samples() == samples)
 		}
 
 		let display_builder = glutin_winit::DisplayBuilder::new();
@@ -71,7 +72,8 @@ impl AppStuff {
 
 		let (window, gl_config) = display_builder
 			.with_window_attributes(Some(window_attributes))
-			.build(event_loop, template, |configs| config_picker(configs).expect("No suitable GL config found"))
+			.build(event_loop, template, |configs| config_picker(configs, config.multisampling)
+				.unwrap_or_else(|| panic!("No suitable sRGB GL configuration for Multisampling={}", config.multisampling)))
 			.expect("Failed to build window and GL config");
 
 		let window = window.expect("DisplayBuilder did not build a Window");
