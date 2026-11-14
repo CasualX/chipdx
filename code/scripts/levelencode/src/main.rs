@@ -3,6 +3,7 @@ use std::{fs, path};
 fn main() {
 	let matches = clap::command!()
 		.about("Create a playable level share link from local file")
+		.arg(clap::arg!(--format <FORMAT> "Format the share link (Markdown uses the level title)").value_parser(["markdown"]))
 		.arg(clap::arg!(--json <JSON_PATH> "Path to a level JSON file").value_parser(clap::value_parser!(path::PathBuf)))
 		.arg(clap::arg!(--paks <PAKS_PATH> "Path to a packed levelset .paks").value_parser(clap::value_parser!(path::PathBuf)))
 		.arg(clap::arg!(--dat <DAT_PATH> "Path to a levelset .dat").value_parser(clap::value_parser!(path::PathBuf)))
@@ -52,7 +53,13 @@ fn main() {
 	let decoded = chipty::decode_level(&encoded);
 	assert_eq!(level_json.as_bytes(), decoded);
 
-	println!("https://casualhacks.net/chipdx/#?levelc={}", encoded);
+	let link = format!("https://casualhacks.net/chipdx/#?levelc={}", encoded);
+	if matches.get_one::<String>("format").map(String::as_str) == Some("markdown") {
+		let title = level.name.replace('\\', "\\\\").replace('[', "\\[").replace(']', "\\]");
+		println!("[{title}]({link})");
+	} else {
+		println!("{link}");
+	}
 }
 
 fn fail(message: &str) -> ! {
