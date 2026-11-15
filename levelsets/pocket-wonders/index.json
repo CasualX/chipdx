@@ -1,0 +1,34 @@
+{
+  "name": "pocket-wonders",
+  "title": "Pocket Wonders",
+  "subtitle": "Twenty puzzle formulas: discover, experiment, reconsider.",
+  "difficulty": 4,
+  "splash": "banner.png",
+  "about": [
+    "Twenty original puzzles, from compact challenges to a full-city adventure.",
+    "Includes verified author replays. No time limits.",
+    "Hidden supplies, chain-push ice, routed cloners, partial posting, and remote control."
+  ],
+  "levels": [
+    "lv/level1.json",
+    "lv/level2.json",
+    "lv/level3.json",
+    "lv/level4.json",
+    "lv/level5.json",
+    "lv/level6.json",
+    "lv/level7.json",
+    "lv/level8.json",
+    "lv/level9.json",
+    "lv/level10.json",
+    "lv/level11.json",
+    "lv/level12.json",
+    "lv/level13.json",
+    "lv/level14.json",
+    "lv/level15.json",
+    "lv/level16.json",
+    "lv/level17.json",
+    "lv/level18.json",
+    "lv/level19.json",
+    "lv/level20.json"
+  ]
+}
