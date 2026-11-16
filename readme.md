@@ -20,7 +20,7 @@ https://github.com/user-attachments/assets/19000227-1337-484a-8a81-2710e5f87b1f
 Play instantly in your browser on desktop or mobile:
 
 <p align="center">
-	<a href="https://github.com/CasualX/chipdx/releases/latest"><img src="docs/download-button-left.svg" alt="Download the latest Chip DX release for Windows" width="220" /></a><a href="https://casualhacks.net/chipdx/index.html"><img src="docs/play-button-right.svg" alt="Play Chip DX instantly in your browser on desktop or mobile" width="220" /></a>
+	<a href="https://github.com/CasualX/chipdx/releases/latest"><img src="docs/download-button-left.svg" alt="Download the latest Chip DX release" width="220" /></a><a href="https://casualhacks.net/chipdx/index.html"><img src="docs/play-button-right.svg" alt="Play Chip DX instantly in your browser on desktop or mobile" width="220" /></a>
 </p>
 
 Getting Started
@@ -33,6 +33,8 @@ Getting Started
 
 ### Download and Play
 
+#### Windows
+
 Precompiled binaries for Windows are available on the [Releases](https://github.com/CasualX/chipdx/releases) page.
 
 1. Download and extract the latest release.
@@ -41,6 +43,17 @@ Precompiled binaries for Windows are available on the [Releases](https://github.
 4. Place additional levelset files in the `levelsets` directory to play them.
 5. Create your own levels with `chipedit.exe`.
 
+#### Linux
+
+Precompiled binaries for x86_64 Linux are available as an AppImage on the [Releases](https://github.com/CasualX/chipdx/releases) page.
+
+1. Download `ChipDX-x86_64.AppImage` from the latest release.
+2. Make it executable: `chmod +x ChipDX-x86_64.AppImage`.
+3. Run `./ChipDX-x86_64.AppImage` and select a levelset to begin playing.
+
+The AppImage includes the game, level editor, and bundled levelsets. Run `./ChipDX-x86_64.AppImage --editor` to create or edit levels.
+See [AppImage compatibility and usage notes](packaging/appimage/readme.md) for system requirements, save locations, and additional levelsets.
+
 ### Build from Source
 
 Other platforms must be built from source code.
@@ -48,16 +61,13 @@ Other platforms must be built from source code.
 1. Install [Rust](https://www.rust-lang.org/tools/install) and clone this repository.
 2. Run the game: `cargo run --release --bin chipplay`
 3. Level editor: `cargo run --release --bin chipedit`
-4. Rebuild the sprite atlas: `atlaskit build gfx/MS/sprites.ini --output data/spritesheet`
 
 ### Publish from Source
 
 1. Run `cargo run --release -p publish -- target/publish` from the repository root.
 2. Find the packaged release files in `target/publish`.
 
-For the Linux game AppImage, run the **Build Binaries** GitHub Actions workflow
-and download `chipdx-appimage-x86_64`. See [AppImage build and compatibility notes](packaging/appimage/readme.md)
-for local builds, system requirements, and save locations.
+For Linux packaging and release artifacts, see the [AppImage build guide](packaging/appimage/building.md).
 
 Controls
 --------

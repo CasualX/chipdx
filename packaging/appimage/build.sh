@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 if [[ $(uname -m) != x86_64 || $(getconf GNU_LIBC_VERSION) != 'glibc 2.31' ]]; then
-    echo 'Build inside Ubuntu 20.04 (x86_64, glibc 2.31); see packaging/appimage/readme.md.' >&2
+    echo 'Build inside Ubuntu 20.04 (x86_64, glibc 2.31); see packaging/appimage/building.md.' >&2
     exit 1
 fi
 
@@ -43,39 +43,71 @@ echo '2fca8b443c92510f1483a883f60061ad09b46b978b2631c807cd873a47ec260d  '"$runti
 export LDAI_RUNTIME_FILE="$runtime"
 
 # This repository does not track Cargo.lock (same resolution policy as Windows).
-cargo build --release -p chipplay -p chipbundle
+cargo build --release -p chipplay -p chipedit -p chipbundle
 assets="$appdir/usr/share/chipdx"
 mkdir -p "$assets" "$appdir/usr/bin"
 "$CARGO_TARGET_DIR/release/chipbundle" "$assets"
 cp chipdx.ini license.md "$assets/"
 install -m755 "$CARGO_TARGET_DIR/release/chipplay" "$appdir/usr/bin/chipplay"
+install -m755 "$CARGO_TARGET_DIR/release/chipedit" "$appdir/usr/bin/chipedit"
 install -m755 packaging/appimage/AppRun "$appdir/AppRun"
 cp code/android/icon.svg "$appdir/chipdx.svg"
 
 # winit and miniaudio dlopen these: ldd alone does not discover them.
-# Leave glibc, libGL/libEGL and graphics drivers on the host.
+# Leave glibc, graphics drivers, Wayland and keyboard libraries on the host.
+# New host EGL drivers can require Wayland symbols absent from Ubuntu 20.04;
+# old xkbcommon also cannot parse newer host Compose tables (issue #4).
 libraries=(
     libX11.so.6 libX11-xcb.so.1 libXcursor.so.1 libXrandr.so.2
     libXi.so.6 libXinerama.so.1 libXrender.so.1 libXfixes.so.3
-    libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1
-    libxkbcommon.so.0 libxkbcommon-x11.so.0 libasound.so.2
+    libasound.so.2
     libpulse.so.0 libudev.so.1
 )
+# Apply exclusions to both passes, including dependencies found transitively.
+# The editor uses the host GTK/GLib stack for native file dialogs. Bundling an
+# older GLib would also break newer host GTK modules and desktop integration.
+host_patterns=(
+    'libwayland-*.so*' 'libxkbcommon*.so*'
+    'libgtk-3.so*' 'libgdk-3.so*'
+    'libglib-2.0.so*' 'libgobject-2.0.so*'
+    'libgio-2.0.so*' 'libgmodule-2.0.so*'
+    'libgthread-2.0.so*' 'libnotify.so*'
+)
+# linuxdeploy traverses excluded libraries too. Exclude GTK's entire dependency
+# graph so old Pango, Cairo, etc. cannot shadow their newer host counterparts.
+gtk_dependencies=$(ldd "$(pkg-config --variable=libdir gtk+-3.0)/libgtk-3.so.0" \
+    "$(pkg-config --variable=libdir libnotify)/libnotify.so.4")
+if [[ "$gtk_dependencies" == *'not found'* ]]; then
+    echo "$gtk_dependencies" >&2
+    exit 1
+fi
+mapfile -t gtk_libraries < <(awk '$2 == "=>" {print $1}' <<< "$gtk_dependencies" | sort -u)
+host_patterns+=("${gtk_libraries[@]}")
+printf '%s\n' "${host_patterns[@]}" > "$assets/host-libraries.txt"
+host_libraries=()
+for pattern in "${host_patterns[@]}"; do
+    host_libraries+=(--exclude-library "$pattern")
+done
 extra=()
 for library in "${libraries[@]}"; do
+    host_library=false
+    for pattern in "${host_patterns[@]}"; do
+        if [[ "$library" == $pattern ]]; then host_library=true; break; fi
+    done
+    "$host_library" && continue
     path=$(ldconfig -p | awk -v name="$library" '$1 == name && /x86-64/ && !found++ {print $NF}')
     [[ -n "$path" ]] || { echo "Missing library: $library" >&2; exit 1; }
     extra+=(--library "$path")
 done
 
 export APPIMAGE_EXTRACT_AND_RUN=1
-"$tool" --appdir "$appdir" "${extra[@]}" \
+"$tool" --appdir "$appdir" "${host_libraries[@]}" "${extra[@]}" \
     --desktop-file packaging/appimage/chipdx.desktop --icon-file "$appdir/chipdx.svg"
 python3 packaging/appimage/check-abi.py "$appdir"
 
 export ARCH=x86_64
 export OUTPUT="$work/dist/ChipDX-x86_64.AppImage"
-"$tool" --appdir "$appdir" --output appimage
+"$tool" --appdir "$appdir" "${host_libraries[@]}" --output appimage
 python3 packaging/appimage/check-abi.py "$OUTPUT"
 cd "$work/dist"
 sha256sum ChipDX-x86_64.AppImage > ChipDX-x86_64.AppImage.sha256

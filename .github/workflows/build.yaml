@@ -55,7 +55,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ['ubuntu:20.04', 'ubuntu:22.04', 'ubuntu:24.04', 'debian:12']
+        os: ['ubuntu:20.04', 'ubuntu:22.04', 'ubuntu:24.04', 'debian:11', 'debian:12', 'debian:13']
+        backend: [x11, wayland]
     container: ${{ matrix.os }}
     steps:
     - name: Checkout Sources
@@ -67,14 +68,29 @@ jobs:
         name: chipdx-appimage-x86_64
         path: appimage
 
+    - name: Use Archived Debian 11 Repositories
+      if: matrix.os == 'debian:11'
+      run: |
+        # Bullseye security indexes on the live mirror reference removed files.
+        # This compatibility job needs the archived package set, signed as usual.
+        rm -f /etc/apt/sources.list.d/debian.sources
+        cat > /etc/apt/sources.list <<'EOF'
+        deb http://archive.debian.org/debian bullseye main
+        deb [check-valid-until=no] http://archive.debian.org/debian-security bullseye-security main
+        EOF
+
     - name: Install Desktop Runtime for Smoke Test
       run: |
         apt-get update
-        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xvfb xauth libgl1-mesa-dri libglx-mesa0 libegl1
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+          xvfb xauth weston libgl1-mesa-dri libglx-mesa0 libegl1 \
+          libwayland-client0 libwayland-cursor0 libwayland-egl1 \
+          libxkbcommon0 libxkbcommon-x11-0 xkb-data libgtk-3-0 libnotify4
 
     - name: Verify Checksum and Launch Game Without FUSE
       run: |
         cd appimage
         sha256sum -c ChipDX-x86_64.AppImage.sha256
         cd ..
-        bash packaging/appimage/smoke-test.sh appimage/ChipDX-x86_64.AppImage
+        bash packaging/appimage/smoke-test.sh appimage/ChipDX-x86_64.AppImage '${{ matrix.backend }}'
+        bash packaging/appimage/smoke-test.sh appimage/ChipDX-x86_64.AppImage '${{ matrix.backend }}' editor

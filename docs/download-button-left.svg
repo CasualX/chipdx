@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="220" height="100" viewBox="0 0 220 100" role="img" aria-labelledby="title desc">
   <title id="title">Download Chip's Challenge DX</title>
-  <desc id="desc">Left half of a segmented button linking to the latest Chip's Challenge DX Windows release.</desc>
+  <desc id="desc">Left half of a segmented button linking to the latest Chip's Challenge DX release.</desc>
   <defs>
     <linearGradient id="btnGradient" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#44d489"/>
@@ -19,7 +19,7 @@
     <path d="M220 10V28H16V26C16 17.163 23.163 10 32 10H220Z" fill="url(#shineGradient)"/>
     <g fill="#ffffff" font-family="'Trebuchet MS', 'Segoe UI', Tahoma, sans-serif" text-anchor="middle">
       <text x="92" y="47" font-size="19" font-weight="700">Download</text>
-      <text x="92" y="69" font-size="13" opacity="0.9">Windows Release</text>
+      <text x="92" y="69" font-size="13" opacity="0.9">Latest Release</text>
     </g>
     <g transform="translate(164 27)">
       <circle cx="24" cy="23" r="20" fill="#ffffff" fill-opacity="0.18"/>

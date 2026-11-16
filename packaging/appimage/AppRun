@@ -1,6 +1,17 @@
 #!/bin/sh
 set -eu
 
+program=chipplay
+if [ "${1:-}" = --editor ]; then
+    program=chipedit
+    shift
+    # Preserve level paths relative to the caller before entering userdata.
+    case "${1:-}" in
+        ''|-*|/*) ;;
+        *) level="$PWD/$1"; shift; set -- "$level" "$@" ;;
+    esac
+fi
+
 appdir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 assets="$appdir/usr/share/chipdx"
 userdata="${XDG_DATA_HOME:-$HOME/.local/share}/chipdx"
@@ -17,4 +28,4 @@ if [ ! -e "$userdata/chipdx.ini" ]; then
 fi
 export LD_LIBRARY_PATH="$appdir/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 cd "$userdata"
-exec "$appdir/usr/bin/chipplay" "$@"
+exec "$appdir/usr/bin/$program" "$@"

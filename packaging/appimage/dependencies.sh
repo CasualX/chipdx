@@ -7,4 +7,5 @@ apt-get install -y --no-install-recommends \
     libudev-dev libx11-dev libx11-xcb-dev libxcursor-dev libxrandr-dev \
     libxi-dev libxinerama-dev libxrender-dev libxfixes-dev \
     libwayland-dev libxkbcommon-dev libxkbcommon-x11-dev \
-    libasound2-dev libpulse-dev libgl1-mesa-dev libegl1-mesa-dev
+    libasound2-dev libpulse-dev libgl1-mesa-dev libegl1-mesa-dev \
+    libgtk-3-dev libnotify-dev
