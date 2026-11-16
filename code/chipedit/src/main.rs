@@ -128,16 +128,38 @@ impl AppStuff {
 		Box::new(AppStuff { size, window, cursor, surface, context, g, resx })
 	}
 
-	fn set_fullscreen(&self, fullscreen: bool) {
-		// Borderless fullscreen on the current monitor
+	fn set_fullscreen(&self, fullscreen: bool, mode: chipgame::config::FullscreenMode) {
 		let target = if fullscreen {
-			let monitor = self.window.current_monitor();
-			Some(winit::window::Fullscreen::Borderless(monitor))
+			Some(self.fullscreen_target(mode))
 		}
 		else {
 			None
 		};
 		self.window.set_fullscreen(target);
+	}
+
+	fn fullscreen_target(&self, mode: chipgame::config::FullscreenMode) -> winit::window::Fullscreen {
+		use raw_window_handle::{HasWindowHandle, RawWindowHandle};
+		use winit::window::Fullscreen;
+
+		let monitor = self.window.current_monitor();
+		if mode == chipgame::config::FullscreenMode::Exclusive {
+			// Wayland ignores exclusive requests, so explicitly use borderless there.
+			let is_wayland = matches!(self.window.window_handle().map(|h| h.as_raw()), Ok(RawWindowHandle::Wayland(_)));
+			if !is_wayland {
+				if let Some(monitor) = &monitor {
+					// Keep the desktop resolution and use its highest available refresh rate.
+					let video_mode = monitor.video_modes()
+						.filter(|mode| mode.size() == monitor.size())
+						.max_by_key(|mode| (mode.refresh_rate_millihertz(), mode.bit_depth()));
+					if let Some(video_mode) = video_mode {
+						return Fullscreen::Exclusive(video_mode);
+					}
+				}
+			}
+			eprintln!("Exclusive fullscreen unavailable; using borderless fullscreen.");
+		}
+		Fullscreen::Borderless(monitor)
 	}
 }
 
@@ -463,12 +485,12 @@ fn main() {
 						PhysicalKey::Code(KeyCode::KeyM) if pressed => {
 							music_enabled = !music_enabled;
 						}
-						PhysicalKey::Code(KeyCode::KeyF) if pressed => {
+						PhysicalKey::Code(KeyCode::KeyF) if pressed && !event.repeat => {
 							if let Some(app) = app.as_deref_mut() {
 								if !fullscreen_toggled {
 									fullscreen_toggled = true;
 									let want_fullscreen = app.window.fullscreen().is_none();
-									app.set_fullscreen(want_fullscreen);
+									app.set_fullscreen(want_fullscreen, config.fullscreen_mode);
 								}
 							}
 						}
@@ -476,7 +498,7 @@ fn main() {
 							if let Some(app) = app.as_deref_mut() {
 								if !fullscreen_toggled {
 									fullscreen_toggled = true;
-									app.set_fullscreen(false);
+									app.set_fullscreen(false, config.fullscreen_mode);
 								}
 							}
 						}

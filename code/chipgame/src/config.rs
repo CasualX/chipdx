@@ -14,6 +14,13 @@ pub enum PostProcess {
 	Crt,
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum FullscreenMode {
+	#[default]
+	Borderless,
+	Exclusive,
+}
+
 pub struct TextureConfig {
 	pub path: String,
 	pub props: shade::TextureProps,
@@ -43,6 +50,7 @@ pub struct FontConfig {
 }
 
 pub struct Config {
+	pub fullscreen_mode: FullscreenMode,
 	pub vsync: bool,
 	pub max_fps: u32,
 	pub multisampling: u8,
@@ -69,6 +77,7 @@ impl Config {
 
 		let mut section = Section::General;
 		let mut vsync = false;
+		let mut fullscreen_mode = FullscreenMode::default();
 		let mut max_fps = 300;
 		let mut multisampling = 0;
 		let mut render_scale = 1.0f32;
@@ -84,6 +93,11 @@ impl Config {
 				ini_core::Item::Property(key, Some(value)) => match section {
 					Section::Error => (),
 					Section::General => match key {
+						"FullscreenMode" => fullscreen_mode = match value {
+							"Exclusive" => FullscreenMode::Exclusive,
+							"Borderless" => FullscreenMode::Borderless,
+							_ => FullscreenMode::Borderless,
+						},
 						"VSync" => { if let Ok(v) = value.parse::<bool>() { vsync = v; } }
 						"MaxFPS" => { if let Ok(v) = value.parse::<u32>() { max_fps = v; } }
 						"Multisampling" => {
@@ -182,6 +196,7 @@ impl Config {
 		}
 
 		Config {
+			fullscreen_mode,
 			multisampling,
 			vsync,
 			max_fps,
