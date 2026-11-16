@@ -338,10 +338,13 @@ pub fn create_fire(fx: &mut FxState, pos: Vec2<i32>) {
 	fx.fire_sprites.insert(pos, handle);
 }
 pub fn remove_fire(fx: &mut FxState, pos: Vec2<i32>) {
+	fx.hidden_fire.remove(&pos);
 	let Some(obj_handle) = fx.fire_sprites.remove(&pos) else { return };
 	let Some(obj) = fx.render.objects.get_mut(obj_handle) else { return };
 
-	obj.anim.anims.push(render::AnimState::FadeOut(render::FadeOut { atime: 0.0 }));
+	// Stop the loop and any assist fade so the extinguished fire can be removed.
+	obj.anim.anims.clear();
+	obj.anim.anims.push(render::AnimState::FadeTo(render::FadeTo { target_alpha: 0.0, fade_spd: 4.0 }));
 	obj.anim.unalive_after_anim = true;
 }
 
