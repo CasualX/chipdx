@@ -49,13 +49,12 @@ impl PlayState {
 				splash.push(Some(animated_texture));
 			}
 		}
-		self.menu.stack.push(menu::Menu::LevelSet(menu::LevelSetMenu {
-			selected: i32::max(0, self.lvsets.selected) as usize,
-			items: self.lvsets.collection.iter().map(|level_set| level_set.title.clone()).collect(),
-			external_loader_label: self.lvsets.external_loader_label.clone(),
+		self.menu.stack.push(menu::Menu::LevelSet(menu::LevelSetMenu::new(
+			i32::max(0, self.lvsets.selected) as usize,
+			self.lvsets.collection.iter().map(|level_set| level_set.title.clone()).collect(),
+			self.lvsets.external_loader_label.clone(),
 			splash,
-			ntime: 0,
-		}));
+		)));
 	}
 
 	pub fn think(&mut self, input: &chipcore::Input) {
