@@ -9,6 +9,7 @@ chipdat = { path = "../../chipdat" }
 chipty = { path = "../../chipty" }
 clap.workspace = true
 cvmath.workspace = true
+gif = "0.13"
 paks.workspace = true
 serde_json.workspace = true
 shade.workspace = true

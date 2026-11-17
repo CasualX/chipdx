@@ -7,16 +7,20 @@ type Image = shade::image::ImageRGBA;
 
 const DEFAULT_TILESET: &str = "data/spritesheet";
 
+mod replay_gif;
+
 fn main() {
 	let matches = clap::command!()
-		.about("Render a Chip's Challenge level preview to a PNG using software pixel blits")
+		.about("Render a level preview PNG or a static-sprite replay GIF")
 		.arg(clap::arg!(--reveal "Reveal hidden entities and draw connection arrows for author review"))
+		.arg(clap::arg!(--replay <REPLAY_JSON> "Replay JSON for a path overlay or GIF").value_parser(clap::value_parser!(path::PathBuf)))
+		.arg(clap::arg!(--mode <MODE> "Path: PNG with cyan movement, purple jumps, green start, orange end. Gif: static sprites after every 60 Hz tick").value_parser(["path", "gif"]).default_value("path"))
 		.arg(clap::arg!(--json <JSON_PATH> "Path to a level JSON file").value_parser(clap::value_parser!(path::PathBuf)))
 		.arg(clap::arg!(--paks <PAKS_PATH> "Path to a packed levelset .paks").value_parser(clap::value_parser!(path::PathBuf)))
 		.arg(clap::arg!(--dat <DAT_PATH> "Path to a levelset .dat").value_parser(clap::value_parser!(path::PathBuf)))
 		.arg(clap::arg!(-k --key [KEY] "Packed levelset encryption key"))
 		.arg(clap::arg!(--tileset [TILESET] "Tileset path without extension, loading .json and .png").value_parser(clap::value_parser!(path::PathBuf)).default_value(DEFAULT_TILESET))
-		.arg(clap::arg!(-o --output <OUTPUT_PNG> "Path to output .png").value_parser(clap::value_parser!(path::PathBuf)).required(true))
+		.arg(clap::arg!(-o --output <OUTPUT> "Output path (.png for path mode, .gif for gif mode)").value_parser(clap::value_parser!(path::PathBuf)).required(true))
 		.arg(clap::arg!([LEVEL] "Level number (1-based) or case-insensitive level name substring"))
 		.get_matches();
 
@@ -25,6 +29,10 @@ fn main() {
 	let dat = matches.get_one::<path::PathBuf>("dat");
 	let output = matches.get_one::<path::PathBuf>("output").unwrap();
 	let selector = matches.get_one::<String>("LEVEL");
+	let gif_mode = matches.get_one::<String>("mode").unwrap() == "gif";
+	if gif_mode && !matches.contains_id("replay") {
+		fail("--mode gif requires --replay PATH");
+	}
 
 	let level = match (json, paks, dat) {
 		(Some(path), None, None) => {
@@ -54,14 +62,94 @@ fn main() {
 
 	let tileset = matches.get_one::<path::PathBuf>("tileset").unwrap();
 	let (atlas, sheet) = load_tileset(tileset);
-	let preview = render_preview(&level, &atlas, &sheet, matches.get_flag("reveal"));
-	preview.save_file_png(output).unwrap_or_else(|err| panic!("save {}: {err}", output.display()));
+	let replay = matches.get_one::<path::PathBuf>("replay").map(|path| {
+		let file = fs::File::open(path).unwrap_or_else(|err| panic!("open {}: {err}", path.display()));
+		let replay: chipty::ReplayDto = serde_json::from_reader(file)
+			.unwrap_or_else(|err| panic!("parse {}: {err}", path.display()));
+		replay
+	});
+	if gif_mode {
+		replay_gif::save(output, &level, replay.as_ref().unwrap(), &atlas, &sheet, matches.get_flag("reveal"))
+			.unwrap_or_else(|err| fail(&format!("save {}: {err}", output.display())));
+	} else {
+		let mut preview = render_preview(&level, &atlas, &sheet, matches.get_flag("reveal"));
+		if let Some(replay) = replay {
+			let route = trace_replay(&level, &replay).unwrap_or_else(|err| fail(&err));
+			draw_replay_path(&mut preview, &route, sprite_frame(&atlas, chipty::SpriteId::Floor).rect.width);
+		}
+		preview.save_file_png(output).unwrap_or_else(|err| panic!("save {}: {err}", output.display()));
+	}
 	println!("Wrote {}", output.display());
 }
 
 fn fail(message: &str) -> ! {
 	eprintln!("levelpreview: {message}");
 	std::process::exit(2);
+}
+
+#[derive(Debug)]
+struct ReplayPath {
+	start: Vec2i,
+	end: Vec2i,
+	// Teleport jumps are separate from actual movement across the floor.
+	segments: Vec<(Vec2i, Vec2i, bool)>,
+}
+
+fn trace_replay(level: &chipty::LevelDto, replay: &chipty::ReplayDto) -> Result<ReplayPath, String> {
+	let seed = u64::from_str_radix(&replay.seed, 16).map_err(|err| format!("invalid replay seed: {err}"))?;
+	let inputs = chipty::try_decode(&replay.inputs).ok_or("invalid replay inputs")?;
+	let mut game = chipcore::GameState::default();
+	game.parse(level, chipcore::RngSeed::Manual(seed));
+	let player = game.ps.master;
+	let start = game.ents.get(player).ok_or("level has no player to trace")?.pos;
+	let mut route = ReplayPath { start, end: start, segments: Vec::new() };
+	game.events.clear();
+	let mut ticks = 0;
+	let mut outcome = None;
+	for byte in inputs {
+		if game.is_game_over() { break; }
+		game.tick(&chipcore::Input::decode(byte));
+		ticks += 1;
+		let events = game.events.take();
+		outcome = events.iter().find_map(|event| match event {
+			chipcore::GameEvent::GameOver { reason } => Some(*reason),
+			_ => None,
+		}).or(outcome);
+		let Some(entity) = game.ents.get(player) else { break; };
+		if entity.pos == route.end { continue; }
+		let teleported = events.iter().any(|event| matches!(event,
+			chipcore::GameEvent::EntityTeleport { entity } if *entity == player));
+		if teleported {
+			// Teleporting also steps off the destination in the same tick.
+			let dest = entity.pos - entity.step_dir.ok_or("teleported player has no step direction")?.to_vec();
+			route.segments.push((route.end, dest, true));
+			route.segments.push((dest, entity.pos, false));
+		} else {
+			route.segments.push((route.end, entity.pos, false));
+		}
+		route.end = entity.pos;
+	}
+	println!("Replay: {ticks} ticks, {} path segments, {}", route.segments.len(),
+		outcome.map(|reason| format!("{reason:?}")).unwrap_or_else(|| "inputs ended before game over".into()));
+	Ok(route)
+}
+
+fn draw_replay_path(image: &mut Image, route: &ReplayPath, tile_size: i32) {
+	let center = |pos: Vec2i| pos * tile_size + Vec2i(tile_size / 2, tile_size / 2);
+	let radius = (tile_size / 32).max(1);
+	// Draw jumps first so they don't obscure the walking path.
+	for teleport in [true, false] {
+		for &(from, to, jump) in &route.segments {
+			if jump != teleport { continue; }
+			let color = if jump { [225, 100, 255, 255] } else { [0, 235, 255, 255] };
+			image.draw_line(center(from), center(to), radius + 1, |_, _| [15, 20, 28, 255]);
+			image.draw_line(center(from), center(to), radius, |_, _| color);
+		}
+	}
+	for (pos, color) in [(route.start, [60, 255, 90, 255]), (route.end, [255, 160, 30, 255])] {
+		image.draw_line(center(pos), center(pos), radius * 3 + 1, |_, _| [15, 20, 28, 255]);
+		image.draw_line(center(pos), center(pos), radius * 3, |_, _| color);
+	}
 }
 
 fn load_level_json(path: &path::Path) -> chipty::LevelDto {
@@ -131,6 +219,12 @@ fn with_extension(base: &path::Path, extension: &str) -> path::PathBuf {
 }
 
 fn render_preview(level: &chipty::LevelDto, atlas: &atlas::Atlas<chipty::SpriteId>, sheet: &Image, reveal: bool) -> Image {
+	let mut state = chipcore::GameState::default();
+	state.parse(level, chipcore::RngSeed::Manual(0));
+	render_state(level, &state, atlas, sheet, reveal)
+}
+
+fn render_state(level: &chipty::LevelDto, state: &chipcore::GameState, atlas: &atlas::Atlas<chipty::SpriteId>, sheet: &Image, reveal: bool) -> Image {
 	let tile_size = sprite_frame(atlas, chipty::SpriteId::Floor).rect.width;
 	let width = level.map.width;
 	let height = level.map.height;
@@ -142,10 +236,17 @@ fn render_preview(level: &chipty::LevelDto, atlas: &atlas::Atlas<chipty::SpriteI
 	let mut preview = Image::new(width * tile_size, height * tile_size, [0, 0, 0, 0]);
 	for y in 0..height {
 		for x in 0..width {
-			let tile = level.map.data[(y * width + x) as usize] as usize;
-			let terrain = level.map.legend.get(tile).copied()
-				.unwrap_or_else(|| panic!("map cell {x},{y} references missing tile {tile}"));
-			blit_sprite(atlas, sheet, &mut preview, terrain_sprite(terrain), Point2i(x, y) * tile_size);
+			let terrain = state.field.get_terrain(Vec2i(x, y));
+			if terrain == chipty::Terrain::BearTrap && state.get_trap_state(Vec2i(x, y)) == chipcore::TrapState::Inactive {
+				// The opening animation starts closed; use its final, fully open frame.
+				let sprite = atlas.sprites.get(&chipty::SpriteId::BearTrapInactiveA)
+					.expect("open trap sprite missing from atlas");
+				let frame = sprite.get_frame(sprite.len().saturating_sub(1))
+					.expect("open trap sprite has no frames");
+				blit_frame(sheet, &mut preview, frame, Point2i(x, y) * tile_size - frame.origin);
+			} else {
+				blit_sprite(atlas, sheet, &mut preview, terrain_sprite(terrain), Point2i(x, y) * tile_size);
+			}
 			// Fire is an effect over the floor in the game renderer, so draw both layers.
 			if terrain == chipty::Terrain::Fire {
 				blit_sprite(atlas, sheet, &mut preview, chipty::SpriteId::FireA, Point2i(x, y) * tile_size);
@@ -153,24 +254,14 @@ fn render_preview(level: &chipty::LevelDto, atlas: &atlas::Atlas<chipty::SpriteI
 		}
 	}
 
-	if reveal {
-		for entity in &level.entities {
-			let sprite = entity_sprite(entity.kind, entity.face_dir);
-			blit_sprite(atlas, sheet, &mut preview, sprite, entity.pos * tile_size);
-		}
-	} else {
-		// Use the engine's actual visibility rules: dirt, blocks, locks, and walls
-		// can conceal entities. Author previews must not reveal puzzle supplies.
-		let mut state = chipcore::GameState::default();
-		state.parse(level, chipcore::RngSeed::Manual(0));
-		for entity in state.ents.iter().filter(|e| e.flags & chipcore::EF_HIDDEN == 0) {
-			let sprite = entity_sprite(entity.kind, entity.face_dir);
-			blit_sprite(atlas, sheet, &mut preview, sprite, entity.pos * tile_size);
-		}
-		for entity in state.templates.values() {
-			let sprite = entity_sprite(entity.kind, entity.face_dir);
-			blit_sprite(atlas, sheet, &mut preview, sprite, entity.pos * tile_size);
-		}
+	// Use the engine's visibility rules unless the author requests --reveal.
+	for entity in state.ents.iter().filter(|e| (reveal || e.flags & chipcore::EF_HIDDEN == 0) && e.flags & chipcore::EF_REMOVE == 0) {
+		let sprite = entity_sprite(entity.kind, entity.face_dir, state.field.get_terrain(entity.pos));
+		blit_sprite(atlas, sheet, &mut preview, sprite, entity.pos * tile_size);
+	}
+	for entity in state.templates.values() {
+		let sprite = entity_sprite(entity.kind, entity.face_dir, state.field.get_terrain(entity.pos));
+		blit_sprite(atlas, sheet, &mut preview, sprite, entity.pos * tile_size);
 	}
 
 	if reveal {
@@ -274,8 +365,15 @@ fn terrain_sprite(terrain: chipty::Terrain) -> chipty::SpriteId {
 	}
 }
 
-fn entity_sprite(kind: chipty::EntityKind, face_dir: Option<chipty::Compass>) -> chipty::SpriteId {
+fn entity_sprite(kind: chipty::EntityKind, face_dir: Option<chipty::Compass>, terrain: chipty::Terrain) -> chipty::SpriteId {
 	match kind {
+		chipty::EntityKind::Player | chipty::EntityKind::PlayerNPC if terrain == chipty::Terrain::Water => match face_dir {
+			Some(chipty::Compass::Up) => chipty::SpriteId::PlayerSwimN,
+			Some(chipty::Compass::Left) => chipty::SpriteId::PlayerSwimW,
+			Some(chipty::Compass::Down) => chipty::SpriteId::PlayerSwimS,
+			Some(chipty::Compass::Right) => chipty::SpriteId::PlayerSwimE,
+			None => chipty::SpriteId::PlayerSwimIdle,
+		},
 		chipty::EntityKind::Player => match face_dir.unwrap_or(chipty::Compass::Down) {
 			chipty::Compass::Up => chipty::SpriteId::PlayerWalkN,
 			chipty::Compass::Left => chipty::SpriteId::PlayerWalkW,
