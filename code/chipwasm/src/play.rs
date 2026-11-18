@@ -74,6 +74,7 @@ fn load_custom_level(mut level: chipty::LevelDto, replay_index: Option<usize>) -
 		title: "Custom Level".to_string(),
 		about: None,
 		splash: None,
+		unlock_all_levels: false,
 		levels: vec![level],
 	};
 

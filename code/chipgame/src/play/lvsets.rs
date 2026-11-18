@@ -6,6 +6,7 @@ pub struct LevelSet {
 	pub title: String,
 	pub about: Option<String>,
 	pub splash: Option<Vec<u8>>,
+	pub unlock_all_levels: bool,
 	pub levels: Vec<chipty::LevelDto>,
 }
 impl LevelSet {
@@ -151,7 +152,8 @@ pub fn load_levelset_dto(fs: Option<&FileSystem>, index: chipty::LevelSetDto, na
 
 	let title = index.title;
 	let about = index.about.map(|lines| lines.join("\n"));
-	sets.push(LevelSet { name, title, about, splash, levels });
+	let unlock_all_levels = index.unlock_all_levels;
+	sets.push(LevelSet { name, title, about, splash, unlock_all_levels, levels });
 }
 
 fn load_dat(path: &path::PathBuf, sets: &mut Vec<LevelSet>) {

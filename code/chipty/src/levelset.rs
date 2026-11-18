@@ -15,6 +15,9 @@ pub struct LevelSetDto {
 	pub subtitle: Option<String>,
 	#[serde(default, skip_serializing_if = "is_default")]
 	pub difficulty: i32,
+	/// Makes every level available without completing earlier levels.
+	#[serde(default, skip_serializing_if = "is_default")]
+	pub unlock_all_levels: bool,
 	#[serde(default, skip_serializing_if = "Option::is_none")]
 	pub about: Option<Vec<String>>,
 	#[serde(default, skip_serializing_if = "Option::is_none")]

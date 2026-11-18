@@ -159,11 +159,13 @@ fn fresh(level_set: &LevelSet, ephemeral: bool) -> SaveData {
 			attempts: vec![0; level_set.levels.len()],
 		},
 		ephemeral,
-		show_hidden_levels: false,
+		show_hidden_levels: level_set.unlock_all_levels,
 		segmented_speedrun: false,
 		options: chipty::OptionsDto::default(),
 	};
-	this.unlocked_levels[0] = true;
+	if let Some(first) = this.unlocked_levels.first_mut() {
+		*first = true;
+	}
 	this
 }
 
@@ -178,14 +180,18 @@ fn load(level_set: &LevelSet, ephemeral: bool) -> SaveData {
 
 	let file_name = get_levelset_state_filename(level_set);
 
-	let mut this = fresh(level_set, false);
-
 	let Ok(content) = read_file(path::Path::new(&file_name)) else {
-		return this;
+		return fresh(level_set, false);
 	};
 	let Some(dto) = serde_json::from_str::<SaveFileDto>(&content).ok() else {
-		return this;
+		return fresh(level_set, false);
 	};
+
+	from_save_file(level_set, &dto)
+}
+
+fn from_save_file(level_set: &LevelSet, dto: &SaveFileDto) -> SaveData {
+	let mut this = fresh(level_set, false);
 
 	if let Some(current_level) = &dto.current_level {
 		if let Some(level_number) = level_set.get_level_number(current_level) {

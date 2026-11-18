@@ -54,6 +54,7 @@ pub fn convert(dat: &super::Data, title: String) -> chipty::LevelSetDto {
 		title,
 		subtitle: None,
 		difficulty: 0,
+		unlock_all_levels: false,
 		about: None,
 		splash: None,
 		levels,
