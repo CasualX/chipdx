@@ -1,0 +1,10 @@
+[package]
+name = "replaycheck"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap.workspace = true
+serde_json.workspace = true
+chipcore = { path = "../../chipcore" }
+chipty = { path = "../../chipty" }

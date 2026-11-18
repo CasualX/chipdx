@@ -1,0 +1,3 @@
+[submodule "pocket-wonders"]
+	path = levelsets/pocket-wonders
+	url = https://github.com/CasualX/pocket-wonders.git
