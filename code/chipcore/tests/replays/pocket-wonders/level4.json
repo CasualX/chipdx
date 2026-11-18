@@ -1,11 +1,11 @@
 {
   "level_name": "Return to Sender",
-  "date": "2026-11-14",
+  "date": "2026-11-17",
   "attempts": 1,
-  "realtime": 65.2,
-  "ticks": 3912,
-  "steps": 318,
-  "bonks": 0,
+  "realtime": 59.0,
+  "ticks": 3540,
+  "steps": 298,
+  "bonks": 2,
   "seed": "0000504f434b4554",
-  "inputs": "eNrVljEOwzAMA+MgQ///4q5aiN6BBupwNJzYlEhaz/MbdwDZswY+EvP/c30FXAPp3Lm+686pDo/EDZC4k76kev6rF6QOS4JolZx1moYb7mk/uf/cbzVs9b824TRfE75EGzaHJ4vE8QqwPiLZQnKAfEtg/WjfCNuLxu82D23dGs032mjy32bsXCeZf7KPiFbtt80b0ZxF+mhnpAa7/Et0mN7WRie7crKZc6wfm7w9IZ8bXuQ+jX/fMgvZvli+dja2+AJ+CjXR"
+  "inputs": "eNrVljsSgzAMBSPGRe5/4pRRgWAXGcZs6fFHz36SPMY5WwGZE4mvJO+fx/Oe8flTnZXHZ8VZaR+SDRAF5C2qO3zy/on2kBBPkrNW8GpHbzWfxJznW69an8ckVstforf0A9CVyZFXumxekPpA8pqsJdj8snXe9rKdEA/z19Y0e1cdD3NbrOA68rJ2badads4iTra/gg4dt5POfkcF6HRkEtusSnL3W/D/g1VEIulk2Vt6t3iRS3rtX87yAwq3MdM"
 }

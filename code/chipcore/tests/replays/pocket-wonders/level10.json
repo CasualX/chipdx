@@ -1,11 +1,11 @@
 {
   "level_name": "The Last Dry Dock",
-  "date": "2026-11-15",
+  "date": "2026-11-17",
   "attempts": 1,
-  "realtime": 25.4,
-  "ticks": 1524,
-  "steps": 128,
+  "realtime": 24.6,
+  "ticks": 1476,
+  "steps": 124,
   "bonks": 0,
   "seed": "0000504f434b4554",
-  "inputs": "eNq1kzEOACAIA4Nx8P8vdu1gzRGgoxEobYl44wBEEhN9NkCWj9Yugdbqu/7v4uZmubmOg+Of1YGDKJN1k/R0WxMHifLEka7kkzQSbStX83eBoJJtkvOutHRh4tYmdrnYUBeJ"
+  "inputs": "eNq1k7ENADEIA8Xri+w/cVqKHDKyfDUYMFD15gjUkoTOL7Dtp+d+DacWQfpK3d5zj3fm1aEOabNKRUWTpiYHZk/mrFnZ+RfSdNxzNqiwvWcicWkJEj+VmOUCqPwW4Q"
 }

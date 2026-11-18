@@ -1,0 +1,235 @@
+{
+  "name": "The Neighbourhood Watch",
+  "author": "Codex",
+  "hint": "Borrow a neighbour.\nMind the double lockout.",
+  "required_chips": 0,
+  "map": {
+    "width": 12,
+    "height": 9,
+    "data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      2,
+      2,
+      3,
+      4,
+      4,
+      4,
+      4,
+      4,
+      5,
+      0,
+      0,
+      0,
+      0,
+      0,
+      6,
+      5,
+      6,
+      7,
+      5,
+      5,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      6,
+      4,
+      8,
+      9,
+      10,
+      5,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      6,
+      7,
+      5,
+      11,
+      5,
+      5,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      6,
+      2,
+      8,
+      9,
+      9,
+      5,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      6,
+      2,
+      12,
+      6,
+      5,
+      12,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      5,
+      9,
+      9,
+      9,
+      9,
+      9,
+      5,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "legend": [
+      "Wall",
+      "Exit",
+      "BearTrap",
+      "Hint",
+      "ThinWallS",
+      "Floor",
+      "ThinWallE",
+      "BrownButton",
+      "ThinWallW",
+      "ThinWallN",
+      "ThinWallNE",
+      "ThinWallSE",
+      "ThinWallNW"
+    ]
+  },
+  "entities": [
+    {
+      "kind": "Player",
+      "pos": [
+        4,
+        3
+      ]
+    },
+    {
+      "kind": "Teeth",
+      "pos": [
+        5,
+        6
+      ]
+    },
+    {
+      "kind": "Teeth",
+      "pos": [
+        6,
+        2
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "src": [
+        7,
+        2
+      ],
+      "dest": [
+        5,
+        6
+      ]
+    },
+    {
+      "src": [
+        7,
+        2
+      ],
+      "dest": [
+        3,
+        1
+      ]
+    },
+    {
+      "src": [
+        5,
+        4
+      ],
+      "dest": [
+        5,
+        5
+      ]
+    },
+    {
+      "src": [
+        5,
+        4
+      ],
+      "dest": [
+        2,
+        1
+      ]
+    }
+  ],
+  "replays": [
+    {
+      "level_name": "The Neighbourhood Watch",
+      "date": "2026-11-17",
+      "attempts": 1,
+      "realtime": 29.0,
+      "ticks": 1740,
+      "steps": 89,
+      "bonks": 0,
+      "seed": "0000504f434b4554",
+      "inputs": "eNrVk7ENADAIw9oqQ/+/uGsXBiSjgB9AsomU40JsiAOxiqG8CYLylu1V7Tm6G/ns1p3q6/Ls2i/lzfUn0/fl8vPzABcBDuk"
+    },
+    {
+      "level_name": "The Neighbourhood Watch",
+      "date": "2026-11-17",
+      "attempts": 1,
+      "realtime": 28.2,
+      "ticks": 1692,
+      "steps": 85,
+      "bonks": 0,
+      "seed": "0000504f434b4554",
+      "inputs": "eNrVk7ENACAQAtVQuP/EtjYWJEeIt8B/DpA8NsSEWBAjDOVNEJQ3N6+059ddyn/6fzfHls/0Hqmet3L8fS8tPzcHNqgOcQ"
+    },
+    {
+      "level_name": "The Neighbourhood Watch",
+      "date": "2026-11-17",
+      "attempts": 1,
+      "realtime": 38.6,
+      "ticks": 2316,
+      "steps": 129,
+      "bonks": 0,
+      "seed": "0000504f434b4554",
+      "inputs": "eNrtk7ENACAMwwBl4P+LWVk6RDKqqOoDOjiu5LEhJsSCGCaUB0FQHlz/rrfoTuTn9S6Uf8pDVv+UB2rHqn1W7bn7Z/v/5V+o3bP83Bw0ghV5"
+    }
+  ]
+}

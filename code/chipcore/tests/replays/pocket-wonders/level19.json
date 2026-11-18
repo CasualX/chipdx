@@ -1,11 +1,11 @@
 {
   "level_name": "Forecast: Detours",
-  "date": "2026-11-15",
+  "date": "2026-11-17",
   "attempts": 1,
-  "realtime": 71.6,
-  "ticks": 4296,
-  "steps": 330,
+  "realtime": 64.833336,
+  "ticks": 3890,
+  "steps": 324,
   "bonks": 0,
   "seed": "0000504f434b4554",
-  "inputs": "eNrVljsOwDAIQ1uUgfufuGNZLBkZR8mbW5TweSTzJwqvQG4EnSEIapwFQP8yd2dyheKj8ySoVxd0hudyuvl39G2NyfRSl3Uwjhln4rvr6GBqfhWfdGeB8STTJ4pXFb8p91V6T8kbisPsNYf36r+n+Z+p15TrwgCazTDj3o9dH055SZlxh8cYR7nfBo46om8YLyl1UXZBNyeON8YtXjrBP+5dpnim6xBmd095dao/HXWZ6vkPoUc+QQ"
+  "inputs": "eNrtlrEOgEAIQ5Xc4P9/sSuDTdqUmjPx7RI4aOt5qlwvgnoogl5nAdC3zOzMW6H6qJ9evwxQD0dDnSVxA70msxeVtTEJvTD103tMMKUFR5uqFhjPYe7E8SjHK5x5ndtz3g3VYTIi4XvI39TZVSrAsxIqzJSDTDmavjlHOwl/YLSfztxE1kxtT/UQ5j3V2RMZ/RWf+R2F35Gamyj7nP53+59M3/wNCkQ8zw"
 }

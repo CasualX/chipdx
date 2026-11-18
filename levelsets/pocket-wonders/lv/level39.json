@@ -1,0 +1,361 @@
+{
+  "name": "Please Hold",
+  "author": "Codex",
+  "hint": "Your Block is important to us.\nPlease hold for a new connection.",
+  "required_chips": 0,
+  "map": {
+    "width": 15,
+    "height": 13,
+    "data": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      2,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0,
+      0,
+      0,
+      3,
+      4,
+      1,
+      5,
+      6,
+      1,
+      1,
+      4,
+      6,
+      1,
+      1,
+      1,
+      1,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      7,
+      5,
+      1,
+      1,
+      0,
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      8,
+      9,
+      5,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2,
+      2,
+      2,
+      2,
+      1,
+      0,
+      0,
+      0,
+      7,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      5,
+      0,
+      2,
+      1,
+      0,
+      0,
+      0,
+      7,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      2,
+      1,
+      0,
+      0,
+      0,
+      7,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      4,
+      2,
+      2,
+      2,
+      1,
+      0,
+      0,
+      0,
+      7,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      5,
+      10,
+      1,
+      1,
+      0,
+      0,
+      0,
+      11,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      6,
+      1,
+      0,
+      10,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "legend": [
+      "Wall",
+      "Gravel",
+      "Floor",
+      "Hint",
+      "Teleport",
+      "BrownButton",
+      "ThinWallW",
+      "BearTrap",
+      "ThinWallE",
+      "Water",
+      "ThinWallN",
+      "Exit"
+    ]
+  },
+  "entities": [
+    {
+      "kind": "Player",
+      "pos": [
+        1,
+        1
+      ]
+    },
+    {
+      "kind": "Block",
+      "pos": [
+        6,
+        2
+      ]
+    },
+    {
+      "kind": "Block",
+      "pos": [
+        6,
+        3
+      ]
+    },
+    {
+      "kind": "Block",
+      "pos": [
+        10,
+        3
+      ]
+    },
+    {
+      "kind": "Block",
+      "pos": [
+        10,
+        9
+      ]
+    },
+    {
+      "kind": "Glider",
+      "pos": [
+        2,
+        1
+      ],
+      "face_dir": "Down"
+    },
+    {
+      "kind": "FireBall",
+      "pos": [
+        8,
+        3
+      ],
+      "face_dir": "Down"
+    }
+  ],
+  "connections": [
+    {
+      "src": [
+        9,
+        9
+      ],
+      "dest": [
+        8,
+        3
+      ]
+    },
+    {
+      "src": [
+        9,
+        3
+      ],
+      "dest": [
+        1,
+        6
+      ]
+    },
+    {
+      "src": [
+        9,
+        4
+      ],
+      "dest": [
+        1,
+        7
+      ]
+    },
+    {
+      "src": [
+        4,
+        2
+      ],
+      "dest": [
+        1,
+        8
+      ]
+    },
+    {
+      "src": [
+        9,
+        6
+      ],
+      "dest": [
+        1,
+        9
+      ]
+    }
+  ],
+  "replays": [
+    {
+      "level_name": "Please Hold",
+      "date": "2026-11-17",
+      "attempts": 1,
+      "realtime": 27.066668,
+      "ticks": 1624,
+      "steps": 119,
+      "bonks": 0,
+      "seed": "0000504f434b4554",
+      "inputs": "eNrNlEEOACEIA13CYf//Yq892GQaNXGORDClQPeaX3Bxx2dw74eB5PYF9N/xOETDKYgHJZBc4qXWTL0sAJl7ovFGb3dmnehNtZBbkOolcaVCSG7aT1cz9dTttdZMZ3KHUzd0AjKTFFk"
+    },
+    {
+      "level_name": "Please Hold",
+      "date": "2026-11-17",
+      "attempts": 1,
+      "realtime": 62.0,
+      "ticks": 3720,
+      "steps": 119,
+      "bonks": 0,
+      "seed": "0000504f434b4554",
+      "inputs": "eNrt18EKgDAMA1BXevD/v9hrDgYSZkFG3nG4Qqu2W/e7G7B1ZhFXRByP9QX2PPYItrcHTNchvS8i/oT1wjVA6eUFlL3KTMCY7kwogXJOVnKcqO3OzFTydXNR7g5uvso6KpOy160ni+m+U/ZfY0z3m9zx1VnsAVDFFFk"
+    },
+    {
+      "level_name": "Please Hold",
+      "date": "2026-11-17",
+      "attempts": 1,
+      "realtime": 32.533333,
+      "ticks": 1952,
+      "steps": 131,
+      "bonks": 0,
+      "seed": "0000504f434b4554",
+      "inputs": "eNrVlDEKwDAMA9vgof9/cVcPPTjhFNobQ4gjS6jqmatB5yknQPf73H7/+DirQfoXYHZNc8HK6u/TH4wfNDf1chd/yoTRsAvjQeq98ZJybFgC009G4xu7nWTd6E21mB5J9Zpz03HEpB/TLp7kMM3qhBtkhRb5"
+    }
+  ]
+}
