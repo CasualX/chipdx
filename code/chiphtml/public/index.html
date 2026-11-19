@@ -38,6 +38,9 @@
 					<symbol id="icon-check" viewBox="0 0 24 24">
 						<path d="M9.25 16.25 5 12l1.5-1.5 2.75 2.75L17.5 5 19 6.5l-9.75 9.75Z" />
 					</symbol>
+					<symbol id="icon-trash" viewBox="0 0 24 24">
+						<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+					</symbol>
 				</defs>
 			</svg>
 
@@ -47,9 +50,41 @@
 				<span id="display-mode-cta-icon" aria-hidden="true">⛶</span>
 				<span>Fullscreen</span>
 			</button>
-			<input id="levelset-file-input" x-ref="levelSetFileInput" type="file" accept=".dat,.ccl,application/octet-stream" @change="loadLocalPlayLevelSet($event)" />
-			<div id="levelset-file-prompt" x-cloak x-show="levelSetFilePromptVisible" @click.self="levelSetFilePromptVisible = false">
-				<button type="button" @click="$refs.levelSetFileInput.click()">Choose Levelset File</button>
+			<dialog id="levelset-manager" x-ref="levelSetManager" aria-labelledby="levelset-manager-title">
+				<h2 id="levelset-manager-title">Custom Levelsets</h2>
+				<div class="levelset-content">
+					<p>Choose CC1 (.dat or .ccl) or ChipDX (.paks) files. They’re saved in this browser and added when you play.</p>
+					<p x-show="!customLevelSets.length">No custom levelsets saved.</p>
+					<ul x-show="customLevelSets.length">
+						<template x-for="levelSet in customLevelSets" :key="levelSet.key">
+							<li>
+								<span x-text="levelSet.name"></span>
+								<button class="levelset-remove" type="button" title="Remove levelset" :aria-label="'Remove ' + levelSet.name" :disabled="levelSetImporting" @click="removeCustomLevelSet(levelSet)">
+									<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-trash"></use></svg>
+								</button>
+							</li>
+						</template>
+					</ul>
+				</div>
+				<div class="levelset-actions">
+					<input x-ref="levelSetFileInput" type="file" accept=".dat,.ccl,.paks" multiple hidden @change="addCustomLevelSets($event)" />
+					<button class="secondary-button" type="button" x-ref="addLevelSetsButton" autofocus :disabled="!wasmExports || levelSetImporting" @click="$refs.levelSetFileInput.click()" x-text="levelSetImporting ? 'Adding…' : 'Add Files'">Add Files</button>
+					<form method="dialog"><button class="secondary-button" type="submit">Done</button></form>
+				</div>
+				<div id="storage-option">
+					<label>
+						<input id="persistent-storage" type="checkbox" :checked="storagePersistenceStatus === 'granted'" :disabled="!canRequestPersistentStorage" @change="requestPersistentStorage($event)" />
+						<span>Persistent storage</span>
+					</label>
+					<button class="storage-help-button" type="button" aria-label="About persistent storage"
+						@click="window.alert('Persistent storage helps protect your custom levelsets, game progress, and settings when your browser frees up space. Clearing this site’s data still removes them.')">?</button>
+				</div>
+				<div class="toast" role="status">
+					<span x-show="toastMessage" :class="{ error: toastIsError }" x-text="toastMessage"></span>
+				</div>
+			</dialog>
+			<div class="toast" role="status" x-cloak>
+				<span x-show="toastMessage" :class="{ error: toastIsError }" x-text="toastMessage"></span>
 			</div>
 			<div id="loading-screen" aria-live="polite" x-cloak x-show="!gameActive">
 				<div id="loading-panel-frame" :style="{ width: loadingPanelFrameWidth + 'px', height: loadingPanelFrameHeight + 'px' }">
@@ -113,18 +148,23 @@
 							</div>
 						</section>
 						</div>
-						<div id="session-options">
-							<label class="option-toggle">
-								<input type="checkbox" x-model="prefs.audioEnabled" />
-								<span class="option-toggle-ui"><svg viewBox="0 0 24 24"><use href="#icon-check"></use></svg></span>
-								<span>Audio</span>
-							</label>
-							<label class="option-toggle">
-								<input type="checkbox" x-model="prefs.fullscreenEnabled" @change="savePrefs()" />
-								<span class="option-toggle-ui"><svg viewBox="0 0 24 24"><use href="#icon-check"></use></svg></span>
-								<span>Fullscreen</span>
-							</label>
-							<button id="play-button" type="button" @click="startGame()" :disabled="!isReadyToPlay">Play</button>
+						<div id="session-footer">
+							<div id="session-options">
+								<label class="option-toggle">
+									<input type="checkbox" x-model="prefs.audioEnabled" />
+									<span class="option-toggle-ui"><svg viewBox="0 0 24 24"><use href="#icon-check"></use></svg></span>
+									<span>Audio</span>
+								</label>
+								<label class="option-toggle">
+									<input type="checkbox" x-model="prefs.fullscreenEnabled" @change="savePrefs()" />
+									<span class="option-toggle-ui"><svg viewBox="0 0 24 24"><use href="#icon-check"></use></svg></span>
+									<span>Fullscreen</span>
+								</label>
+							</div>
+							<div id="session-actions">
+								<button id="manage-levelsets-button" class="secondary-button" type="button" x-show="!isSingleLevel" :disabled="gameStarting" @click="openLevelSetManager()">Manage Levelsets</button>
+								<button id="play-button" type="button" @click="startGame()" :disabled="!isReadyToPlay">Play</button>
+							</div>
 						</div>
 					</div>
 				</div>

@@ -181,17 +181,14 @@ fn parse_level(index: u16, data: &[u8], opts: &Options) -> Result<Level, DatErro
 	let required_chips = u16::from_le_bytes([data[6], data[7]]);
 	let _unclear = u16::from_le_bytes([data[8], data[9]]);
 
-	let top_layer_len = u16::from_le_bytes([data[10], data[11]]) as usize;
-
-	let bottom_layer_offset = 12 + top_layer_len;
-	let bottom_layer_len = u16::from_le_bytes([data[bottom_layer_offset], data[bottom_layer_offset + 1]]) as usize;
-
-	let metadata_offset = bottom_layer_offset + 2 + bottom_layer_len;
-	let metadata_len = u16::from_le_bytes([data[metadata_offset], data[metadata_offset + 1]]) as usize;
-	let metadata_bytes = &data[metadata_offset + 2..metadata_offset + 2 + metadata_len];
-
-	let top_layer = decode_layer_rle(&data[12..12 + top_layer_len]);
-	let bottom_layer = decode_layer_rle(&data[bottom_layer_offset + 2..bottom_layer_offset + 2 + bottom_layer_len]);
+	let (top_layer, rest) = split_sized_chunk(index, &data[10..])?;
+	let (bottom_layer, rest) = split_sized_chunk(index, rest)?;
+	let (metadata_bytes, _) = split_sized_chunk(index, rest)?;
+	let top_layer = decode_layer_rle(top_layer);
+	let bottom_layer = decode_layer_rle(bottom_layer);
+	if top_layer.len() < 32 * 32 || bottom_layer.len() < 32 * 32 {
+		return Err(DatError::InvalidLevelData { index });
+	}
 	let metadata = parse_metadata(index, metadata_bytes, opts)?;
 
 	Ok(Level {
@@ -202,6 +199,14 @@ fn parse_level(index: u16, data: &[u8], opts: &Options) -> Result<Level, DatErro
 		bottom_layer,
 		metadata,
 	})
+}
+
+fn split_sized_chunk(index: u16, data: &[u8]) -> Result<(&[u8], &[u8]), DatError> {
+	let Some((&[lo, hi], data)) = data.split_first_chunk::<2>() else {
+		return Err(DatError::InvalidLevelData { index });
+	};
+	let len = u16::from_le_bytes([lo, hi]) as usize;
+	data.split_at_checked(len).ok_or(DatError::InvalidLevelData { index })
 }
 
 fn decode_layer_rle(data: &[u8]) -> Vec<u8> {
@@ -239,9 +244,11 @@ fn parse_metadata(index: u16, data: &[u8], opts: &Options) -> Result<Metadata, D
 
 	let mut i = 0;
 	while i < data.len() {
-		let ty = data[i];
-		let len = data[i + 1] as usize;
-		let chunk = &data[i + 2..i + 2 + len];
+		let Some(&[ty, len]) = data[i..].first_chunk::<2>() else {
+			return Err(DatError::InvalidLevelData { index });
+		};
+		let len = len as usize;
+		let chunk = data.get(i + 2..i + 2 + len).ok_or(DatError::InvalidLevelData { index })?;
 
 		match ty {
 			1 => metadata.time_limit = Some(parse_u16(index, chunk)?),
@@ -329,11 +336,10 @@ fn parse_encrypted_password(index: u16, data: &[u8], opts: &Options) -> Result<S
 
 fn parse_string(index: u16, data: &[u8], opts: &Options) -> Result<String, DatError> {
 	// C string, must be nul terminated and not have nul bytes inside
-	let nul_pos = data.iter().position(|&b| b == 0).unwrap_or(data.len());
-	if nul_pos != data.len() - 1 {
+	let bytes = data.strip_suffix(&[0]).ok_or(DatError::InvalidStringData { index })?;
+	if bytes.contains(&0) {
 		return Err(DatError::InvalidStringData { index });
 	}
-	let bytes = &data[..nul_pos];
 
 	let string = match opts.encoding {
 		Encoding::Utf8 => {

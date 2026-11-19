@@ -5,6 +5,5 @@ pub enum PlayEvent {
 	PlayMusic { music: Option<chipty::MusicId> },
 	SetTitle,
 	Restart,
-	LoadExternalLevelSet,
 	Quit,
 }

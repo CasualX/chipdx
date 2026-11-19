@@ -8,10 +8,14 @@ pub fn compress(data: &[u8]) -> Vec<u8> {
 }
 
 pub fn decompress(data: &[u8]) -> Vec<u8> {
+	try_decompress(data).unwrap()
+}
+
+pub fn try_decompress(data: &[u8]) -> std::io::Result<Vec<u8>> {
 	let mut z = flate2::bufread::ZlibDecoder::new(data);
 	let mut buf = Vec::new();
-	z.read_to_end(&mut buf).unwrap();
-	buf
+	z.read_to_end(&mut buf)?;
+	Ok(buf)
 }
 
 pub fn encode(bytes: &[u8]) -> String {
@@ -30,10 +34,7 @@ pub fn decode(string: &str) -> Vec<u8> {
 
 pub fn try_decode(string: &str) -> Option<Vec<u8>> {
 	let data = basenc::Base64Std.decode(string).ok()?;
-	let mut z = flate2::bufread::ZlibDecoder::new(data.as_slice());
-	let mut buf = Vec::new();
-	z.read_to_end(&mut buf).ok()?;
-	Some(buf)
+	try_decompress(&data).ok()
 }
 
 pub fn encode_level(bytes: &[u8]) -> String {
@@ -48,8 +49,5 @@ pub fn decode_level(string: &str) -> Vec<u8> {
 
 pub fn try_decode_level(string: &str) -> Option<Vec<u8>> {
 	let data = basenc::Base64Url.decode(string).ok()?;
-	let mut z = flate2::bufread::ZlibDecoder::new(data.as_slice());
-	let mut buf = Vec::new();
-	z.read_to_end(&mut buf).ok()?;
-	Some(buf)
+	try_decompress(&data).ok()
 }

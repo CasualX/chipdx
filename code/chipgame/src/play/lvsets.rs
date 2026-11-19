@@ -21,14 +21,12 @@ impl LevelSet {
 pub struct LevelSets {
 	pub selected: i32,
 	pub collection: Vec<LevelSet>,
-	pub external_loader_label: Option<String>,
 }
 impl Default for LevelSets {
 	fn default() -> Self {
 		Self {
 			selected: -1,
 			collection: Vec::new(),
-			external_loader_label: None,
 		}
 	}
 }
@@ -99,32 +97,25 @@ fn load_levelsets(sets: &mut Vec<LevelSet>) {
 }
 
 pub fn load_levelset(fs: &FileSystem, name: String, sets: &mut Vec<LevelSet>) {
-	let index: chipty::LevelSetDto = {
-		let index = match fs.read_compressed("index.json") {
-			Ok(data) => data,
-			Err(err) => {
-				eprintln!("Error reading index.json: {}", err);
-				return;
-			}
-		};
-		match serde_json::from_slice(&index) {
-			Ok(level_set) => level_set,
-			Err(err) => {
-				eprintln!("Error parsing index.json: {}", err);
-				return;
-			}
-		}
-	};
-	load_levelset_dto(Some(fs), index, name, sets);
+	match read_levelset_index(fs) {
+		Ok(index) => sets.push(levelset_from_dto(Some(fs), index, name)),
+		Err(err) => eprintln!("Error loading levelset {name}: {err}"),
+	}
 }
 
-pub fn load_levelset_dto(fs: Option<&FileSystem>, index: chipty::LevelSetDto, name: String, sets: &mut Vec<LevelSet>) {
+pub fn read_levelset_index(fs: &FileSystem) -> io::Result<chipty::LevelSetDto> {
+	let index = fs.read_compressed("index.json")?;
+	Ok(serde_json::from_slice(&index)?)
+}
+
+pub fn levelset_from_dto(fs: Option<&FileSystem>, index: chipty::LevelSetDto, name: String) -> LevelSet {
 	let mut levels = Vec::new();
 	for level_ref in index.levels {
 		let level = match level_ref {
 			chipty::LevelRef::Direct(level) => level,
 			chipty::LevelRef::Indirect(level_path) => {
-				let content = match fs.unwrap().read_to_string(&level_path) {
+				let Some(fs) = fs else { continue; };
+				let content = match fs.read_to_string(&level_path) {
 					Ok(data) => data,
 					Err(err) => {
 						eprintln!("Error reading {level_path}: {err}");
@@ -143,17 +134,12 @@ pub fn load_levelset_dto(fs: Option<&FileSystem>, index: chipty::LevelSetDto, na
 		levels.push(level);
 	}
 
-	let splash = index.splash.and_then(|s| match fs? {
-		FileSystem::Memory(paks, key) => paks.read(s.as_bytes(), key).ok(),
-		FileSystem::Paks(paks, key) => paks.read(s.as_bytes(), key).ok(),
-		FileSystem::Bundle(bundle) => bundle.read(s.as_bytes(), bundle.key()).ok(),
-		FileSystem::StdFs(path) => fs::read(path.join(s)).ok(),
-	});
+	let splash = index.splash.and_then(|s| fs?.read(&s).ok());
 
 	let title = index.title;
 	let about = index.about.map(|lines| lines.join("\n"));
 	let unlock_all_levels = index.unlock_all_levels;
-	sets.push(LevelSet { name, title, about, splash, unlock_all_levels, levels });
+	LevelSet { name, title, about, splash, unlock_all_levels, levels }
 }
 
 fn load_dat(path: &path::PathBuf, sets: &mut Vec<LevelSet>) {
@@ -172,5 +158,5 @@ fn load_dat(path: &path::PathBuf, sets: &mut Vec<LevelSet>) {
 
 	let index = chipdat::convert(&dat, title.clone());
 
-	load_levelset_dto(None, index, title, sets);
+	sets.push(levelset_from_dto(None, index, title));
 }

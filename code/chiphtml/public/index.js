@@ -1,6 +1,7 @@
 import { createWasmAPI } from "./shade.js";
 
 const PREFS_KEY = "chipdx-prefs";
+const LEVELSET_KEY_PREFIX = "chipdx-custom-levelset:";
 const DEFAULT_PREFS = {
 	audioEnabled: true,
 	fullscreenEnabled: true,
@@ -15,12 +16,31 @@ const INPUT_B = 1 << 5;
 const INPUT_START = 1 << 6;
 const INPUT_SELECT = 1 << 7;
 
+function levelSetKey(filename) {
+	const extension = /\.paks$/i.test(filename) ? "paks" : "dat";
+	const stem = filename.replace(/\.(dat|ccl|paks)$/i, "").trim() || "Local Levelset";
+	return `${LEVELSET_KEY_PREFIX}${stem}.${extension}`;
+}
+
+function encodeLevelSet(bytes) {
+	let binary = "";
+	for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+		binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+	}
+	return btoa(binary);
+}
+
 window.chipGame = function chipGame() {
 	return {
 		loadingStatus: "Starting...",
 		loadingProgress: 0,
 		hudText: "",
-		levelSetFilePromptVisible: false,
+		customLevelSets: [],
+		toastMessage: "",
+		toastIsError: false,
+		toastTimer: 0,
+		levelSetImporting: false,
+		isSingleLevel: false,
 		showDisplayModeCta: false,
 		detectedControlScheme: "keyboard",
 		selectedControlScheme: "keyboard",
@@ -31,6 +51,7 @@ window.chipGame = function chipGame() {
 		loadingPanelFrameHeight: 0,
 		hasTouchSupport: false,
 		prefs: { ...DEFAULT_PREFS },
+		storagePersistenceStatus: "idle",
 		touchEnabled: false,
 		touchPressed: {
 			up: false,
@@ -44,6 +65,7 @@ window.chipGame = function chipGame() {
 		},
 		padDir: null,
 		gameActive: false,
+		gameStarting: false,
 		gameThinkStartTime: 0,
 		replayStartDelayMs: 0,
 		pageActive: true,
@@ -84,6 +106,9 @@ window.chipGame = function chipGame() {
 			window.addEventListener("gamepaddisconnected", () => self.handleGamepadChange());
 			window.addEventListener("resize", () => self.syncViewportLayout());
 			window.addEventListener("hashchange", () => window.location.reload());
+			window.addEventListener("storage", (event) => {
+				if (event.key === null || event.key.startsWith(LEVELSET_KEY_PREFIX)) self.refreshCustomLevelSets();
+			});
 			document.addEventListener("fullscreenchange", () => self.updateDisplayModeCta());
 			document.addEventListener("visibilitychange", () => self.syncPageActivity());
 			if (screen && screen.orientation && screen.orientation.addEventListener) {
@@ -94,7 +119,8 @@ window.chipGame = function chipGame() {
 			this.syncPageActivity();
 			this.load().catch((err) => {
 				console.error(err);
-				this.setLoadingStatus(String(err && err.message ? err.message : err));
+				this.setLoadingStatus("");
+				this.showToast(`Could not load the game — ${err?.message ?? err}. Reload to try again.`, true);
 			});
 		},
 
@@ -122,11 +148,11 @@ window.chipGame = function chipGame() {
 		},
 
 		get overlayStatusText() {
-			return `Loading game: ${this.loadingStatus}`;
+			return !this.loadingStatus || this.loadingProgress >= 1 ? this.loadingStatus : `Loading game: ${this.loadingStatus}`;
 		},
 
 		get isReadyToPlay() {
-			return this.loadingProgress >= 1 && !!this.wasmGamePtr;
+			return this.loadingProgress >= 1 && !this.gameActive && !this.gameStarting && !this.levelSetImporting;
 		},
 
 		get showAllControlHints() {
@@ -158,6 +184,44 @@ window.chipGame = function chipGame() {
 			}
 			catch (err) {
 				console.warn("Prefs write failed", err);
+			}
+		},
+
+		get canRequestPersistentStorage() {
+			return ["available", "denied", "error"].includes(this.storagePersistenceStatus);
+		},
+
+		async refreshStoragePersistenceStatus() {
+			if (["checking", "requesting"].includes(this.storagePersistenceStatus)) return;
+			const storage = navigator.storage;
+			if (typeof storage?.persisted !== "function" || typeof storage?.persist !== "function") {
+				this.storagePersistenceStatus = "unsupported";
+				this.showToast("Persistent storage is unavailable in this browser.", true);
+				return;
+			}
+			this.storagePersistenceStatus = "checking";
+			try {
+				this.storagePersistenceStatus = await storage.persisted() ? "granted" : "available";
+			}
+			catch {
+				this.storagePersistenceStatus = "error";
+				this.showToast("Could not check persistent storage permission.", true);
+			}
+		},
+
+		async requestPersistentStorage(event) {
+			// The browser decides whether to check the box.
+			event.target.checked = false;
+			if (!this.canRequestPersistentStorage) return;
+			this.storagePersistenceStatus = "requesting";
+			try {
+				const granted = await navigator.storage.persist();
+				this.storagePersistenceStatus = granted ? "granted" : "denied";
+				if (!granted) this.showToast("The browser declined the persistent storage request.", true);
+			}
+			catch {
+				this.storagePersistenceStatus = "error";
+				this.showToast("Could not request persistent storage.", true);
 			}
 		},
 
@@ -313,12 +377,12 @@ window.chipGame = function chipGame() {
 
 		handleWindowError(event) {
 			console.error("window.error", event.error ?? event.message ?? event);
-			this.setLoadingStatus(String(event.error?.message ?? event.message ?? event));
+			this.showToast(String(event.error?.message ?? event.message ?? event), true);
 		},
 
 		handleUnhandledRejection(event) {
 			console.error("unhandledrejection", event.reason);
-			this.setLoadingStatus(String(event.reason?.message ?? event.reason ?? event));
+			this.showToast(String(event.reason?.message ?? event.reason ?? event), true);
 		},
 
 		resizeCanvasToDisplaySize() {
@@ -378,6 +442,7 @@ window.chipGame = function chipGame() {
 		},
 
 		handleKeyDown(event) {
+			if (!this.gameActive) return;
 			this.pressedKeys.add(event.code);
 			if (
 				event.code.startsWith("Arrow") ||
@@ -392,6 +457,7 @@ window.chipGame = function chipGame() {
 		},
 
 		handleKeyUp(event) {
+			if (!this.gameActive) return;
 			this.pressedKeys.delete(event.code);
 			if (
 				event.code.startsWith("Arrow") ||
@@ -407,7 +473,6 @@ window.chipGame = function chipGame() {
 
 		getButtonsBitmask() {
 			if (!this.pageActive) return 0;
-			if (this.levelSetFilePromptVisible) return 0;
 
 			let buttons = 0;
 			if (this.pressedKeys.has("ArrowUp") || this.pressedKeys.has("KeyW")) buttons |= INPUT_UP;
@@ -516,18 +581,6 @@ window.chipGame = function chipGame() {
 			this.updateDisplayModeCta();
 		},
 
-		requestLevelSetFile() {
-			this.levelSetFilePromptVisible = true;
-			requestAnimationFrame(() => {
-				try {
-					this.$refs.levelSetFileInput?.click();
-				}
-				catch {
-					// The visible button remains available.
-				}
-			});
-		},
-
 		allocWasmBytes(bytes) {
 			const exports = this.wasmExports;
 			const wasmMemory = this.wasmMemory;
@@ -547,42 +600,113 @@ window.chipGame = function chipGame() {
 			};
 		},
 
-		getLevelSetDisplayName(file) {
-			const rawName = file && file.name ? file.name : "Local Levelset";
-			const baseName = rawName.split(/[\\/]/).pop() || rawName;
-			const displayName = baseName.replace(/\.(dat|ccl)$/i, "").trim();
-			return displayName || "Local Levelset";
+		openLevelSetManager() {
+			this.$refs.levelSetManager.showModal();
+			this.refreshCustomLevelSets();
+			this.refreshStoragePersistenceStatus();
 		},
 
-		async loadLocalPlayLevelSet(event) {
-			const input = event.target;
-			const file = input.files && input.files[0];
-			input.value = "";
-			this.levelSetFilePromptVisible = false;
-			if (!file) return;
+		refreshCustomLevelSets() {
 			try {
-				const dataBytes = new Uint8Array(await file.arrayBuffer());
-				const nameBytes = new TextEncoder().encode(this.getLevelSetDisplayName(file));
-				const data = this.allocWasmBytes(dataBytes);
-				const name = this.allocWasmBytes(nameBytes);
-				try {
-					this.lastWasmError = null;
-					const result = this.wasmExports.loadLocalPlayLevelSet(this.wasmGamePtr, data.ptr, data.len, name.ptr, name.len);
-					if (this.lastWasmError instanceof Error) {
-						throw this.lastWasmError;
+				const sets = [];
+				for (const key of Object.keys(localStorage)) {
+					if (!key.startsWith(LEVELSET_KEY_PREFIX)) continue;
+					const raw = localStorage.getItem(key);
+					if (raw === null) continue;
+					const set = { key, name: key.slice(LEVELSET_KEY_PREFIX.length), data: null };
+					try {
+						const saved = JSON.parse(raw);
+						if (typeof saved?.name === "string" && typeof saved.data === "string") {
+							set.name = saved.name;
+							set.data = saved.data;
+						}
 					}
-					if (result !== 0) {
-						throw new Error("Levelset file could not be loaded");
+					catch {
+						// Keep a damaged entry visible so it can be removed.
+					}
+					sets.push(set);
+				}
+				this.customLevelSets = sets.sort((a, b) => a.name.localeCompare(b.name));
+			}
+			catch {
+				this.showToast("Could not read saved levelsets from this browser.", true);
+			}
+		},
+
+		showToast(message, isError = false) {
+			clearTimeout(this.toastTimer);
+			this.toastMessage = message;
+			this.toastIsError = isError;
+			const duration = isError ? Math.max(6500, Math.min(15000, message.length * 45)) : 3000;
+			this.toastTimer = setTimeout(() => {
+				this.toastMessage = "";
+				this.toastTimer = 0;
+			}, duration);
+		},
+
+		async addCustomLevelSets(event) {
+			const input = event.target;
+			const files = Array.from(input.files);
+			input.value = "";
+			if (!files.length || this.levelSetImporting) return;
+
+			this.levelSetImporting = true;
+			const errors = [];
+			let added = 0;
+			try {
+				for (const file of files) {
+					try {
+						const bytes = new Uint8Array(await file.arrayBuffer());
+						this.loadPlayLevelSet(0, file.name, bytes);
+						const key = levelSetKey(file.name);
+						const value = JSON.stringify({ name: file.name, data: encodeLevelSet(bytes) });
+						if (localStorage.getItem(key) !== null) {
+							throw new Error("A levelset with this name is already saved. Remove it first to import another copy.");
+						}
+						localStorage.setItem(key, value);
+						added++;
+					}
+					catch (err) {
+						const message = err?.name === "QuotaExceededError" ? "This browser’s storage is full." : err?.message ?? String(err);
+						errors.push(`${file.name} — ${message}`);
 					}
 				}
-				finally {
-					this.wasmExports.freeBytes(name.ptr, name.capacity);
-					this.wasmExports.freeBytes(data.ptr, data.capacity);
-				}
+				const messages = added ? [`Added ${added} ${added === 1 ? "levelset" : "levelsets"}.`, ...errors] : errors;
+				this.showToast(messages.join("\n"), errors.length > 0);
+				this.refreshCustomLevelSets();
+			}
+			finally {
+				this.levelSetImporting = false;
+			}
+		},
+
+		removeCustomLevelSet(set) {
+			if (!window.confirm(`Remove "${set.name}" from your custom levelsets?`)) return;
+			try {
+				localStorage.removeItem(set.key);
+				this.showToast("Levelset removed.");
+				this.refreshCustomLevelSets();
+				this.$refs.addLevelSetsButton.focus();
 			}
 			catch (err) {
-				console.error("levelset file load failed", err);
-				this.setLoadingStatus(String(err && err.message ? err.message : err));
+				this.showToast(`Could not remove ${set.name} — ${err?.message ?? err}`, true);
+			}
+		},
+
+		loadPlayLevelSet(instance, filename, bytes) {
+			const data = this.allocWasmBytes(bytes);
+			let name;
+			try {
+				name = this.allocWasmBytes(new TextEncoder().encode(filename));
+				this.lastWasmError = null;
+				const result = this.wasmExports.loadPlayLevelSet(instance, data.ptr, data.len, name.ptr, name.len);
+				if (result !== 0) {
+					throw this.lastWasmError ?? new Error("The levelset file could not be loaded");
+				}
+			}
+			finally {
+				if (name) this.wasmExports.freeBytes(name.ptr, name.capacity);
+				this.wasmExports.freeBytes(data.ptr, data.capacity);
 			}
 		},
 
@@ -626,18 +750,55 @@ window.chipGame = function chipGame() {
 		},
 
 		async startGame() {
-			if (!this.isReadyToPlay) {
-				return;
+			if (!this.isReadyToPlay) return;
+			this.gameStarting = true;
+			try {
+				if (!this.wasmGamePtr) {
+					this.preparePlayInstance();
+				}
+				this.savePrefs();
+				if (this.prefs.fullscreenEnabled) {
+					await this.requestPreferredDisplayMode();
+				}
+				if (this.prefs.audioEnabled) {
+					await this.enableAudio();
+				}
+				this.gameThinkStartTime = performance.now() + this.replayStartDelayMs;
+				this.gameActive = true;
 			}
-			this.savePrefs();
-			if (this.prefs.fullscreenEnabled) {
-				await this.requestPreferredDisplayMode();
+			catch (err) {
+				this.showToast(err?.message ?? String(err), true);
 			}
-			if (this.prefs.audioEnabled) {
-				await this.enableAudio();
+			finally {
+				this.gameStarting = false;
 			}
-			this.gameThinkStartTime = performance.now() + this.replayStartDelayMs;
-			this.gameActive = true;
+		},
+
+		preparePlayInstance() {
+			this.refreshCustomLevelSets();
+			const exports = this.wasmExports;
+			const gamePtr = exports.createPlayInstance();
+			if (!gamePtr) throw new Error("Could not create the game instance");
+			try {
+				for (const set of this.customLevelSets) {
+					try {
+						if (set.data === null) throw new Error("The saved file is invalid");
+						const binary = atob(set.data);
+						const bytes = new Uint8Array(binary.length);
+						for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+						this.loadPlayLevelSet(gamePtr, set.name, bytes);
+					}
+					catch (err) {
+						throw new Error(`Could not load ${set.name} — ${err.message}`);
+					}
+				}
+				exports.launchPlayInstance(gamePtr);
+				this.wasmGamePtr = gamePtr;
+			}
+			catch (err) {
+				exports.destroyPlayInstance(gamePtr);
+				throw err;
+			}
 		},
 
 		onPadTouchStart(event) {
@@ -670,6 +831,7 @@ window.chipGame = function chipGame() {
 			this.updateDisplayModeCta();
 			const customLevelLink = this.getCustomLevelLink();
 			let customLevelPayload = this.getCustomLevelPayload();
+			this.isSingleLevel = customLevelLink !== null || customLevelPayload !== null;
 			if (customLevelLink !== null) {
 				customLevelPayload = await this.fetchCustomLevel(customLevelLink);
 			}
@@ -703,8 +865,6 @@ window.chipGame = function chipGame() {
 					out[index] = (Math.random() * 256) | 0;
 				}
 			};
-
-			let resultValue = null;
 
 			const playSound = (sound_id) => {
 				if (!this.prefs.audioEnabled) return;
@@ -807,12 +967,7 @@ window.chipGame = function chipGame() {
 			};
 
 			const resultError = (message_ptr, message_len) => {
-				resultValue = new Error(readUtf8(message_ptr, message_len) || "Unknown error");
-				this.lastWasmError = resultValue;
-			};
-
-			const requestLevelSetFile = () => {
-				this.requestLevelSetFile();
+				this.lastWasmError = new Error(readUtf8(message_ptr, message_len) || "Unknown error");
 			};
 
 			const readFile = (path_ptr, path_len, content_ptr, content_len_ptr) => {
@@ -873,7 +1028,6 @@ window.chipGame = function chipGame() {
 					registerSound,
 					registerMusic,
 					setTitle,
-					requestLevelSetFile,
 					quitGame,
 					resultError,
 					readFile,
@@ -890,41 +1044,20 @@ window.chipGame = function chipGame() {
 			this.wasmExports = exports;
 			this.wasmMemory = wasmMemory;
 
-			const allocWasmBytes = (bytes) => {
-				return this.allocWasmBytes(bytes);
-			};
-
-			this.setLoadingStatus("Starting...", 0.8);
-			let gamePtr = 0;
-			try {
-				if (customLevelPayload !== null) {
-					this.setLoadingStatus("Loading custom level...", 0.8);
-					resultValue = null;
-					const payloadBytes = encoder.encode(customLevelPayload.value);
-					const payload = allocWasmBytes(payloadBytes);
-					try {
-						gamePtr = exports.createCustomPlayLevel(payload.ptr, payload.len, customLevelPayload.compressed, replayIndex ?? -1);
-					}
-					finally {
-						exports.freeBytes(payload.ptr, payload.capacity);
-					}
-					if (resultValue instanceof Error) {
-						throw resultValue;
-					}
+			if (customLevelPayload !== null) {
+				this.setLoadingStatus("Loading custom level...", 0.8);
+				this.lastWasmError = null;
+				const payload = this.allocWasmBytes(encoder.encode(customLevelPayload.value));
+				try {
+					this.wasmGamePtr = exports.createCustomPlayLevel(payload.ptr, payload.len, customLevelPayload.compressed, replayIndex ?? -1);
 				}
-				else {
-					gamePtr = exports.createPlayInstance();
+				finally {
+					exports.freeBytes(payload.ptr, payload.capacity);
+				}
+				if (!this.wasmGamePtr) {
+					throw this.lastWasmError ?? new Error("Could not create the custom level instance");
 				}
 			}
-			catch (err) {
-				const message = err && err.message ? err.message : String(err);
-				throw new Error(`${customLevelPayload !== null ? "createCustomPlayLevel()" : "createPlayInstance()"} trapped: ${message}`);
-			}
-			if (!gamePtr) {
-				const label = customLevelPayload === null ? "createPlayInstance()" : "createCustomPlayLevel()";
-				throw new Error(`${label} returned null (0) instance pointer`);
-			}
-			this.wasmGamePtr = gamePtr;
 
 			this.setLoadingStatus("Ready to play", 1);
 
@@ -956,6 +1089,7 @@ window.chipGame = function chipGame() {
 					return;
 				}
 
+				const gamePtr = this.wasmGamePtr;
 				const dt = Math.min(250, now - last);
 				last = now;
 				if (now < this.gameThinkStartTime) {
@@ -971,7 +1105,7 @@ window.chipGame = function chipGame() {
 						exports.thinkPlayInstance(gamePtr, buttons);
 					}
 					catch (err) {
-						this.setLoadingStatus(`thinkPlayInstance() trapped: ${err && err.message ? err.message : String(err)}`);
+						this.showToast(`Could not update the game — ${err?.message ?? err}`, true);
 						return;
 					}
 					thinkCount++;
@@ -983,7 +1117,7 @@ window.chipGame = function chipGame() {
 					exports.drawPlayInstance(gamePtr, now / 1000.0, width, height);
 				}
 				catch (err) {
-					this.setLoadingStatus(`drawPlayInstance() trapped: ${err && err.message ? err.message : String(err)}`);
+					this.showToast(`Could not draw the game — ${err?.message ?? err}`, true);
 					return;
 				}
 				drawCount++;
@@ -1011,7 +1145,8 @@ window.chipGame = function chipGame() {
 						this.frameHandle = 0;
 					}
 					try {
-						exports.destroyPlayInstance(gamePtr);
+						exports.destroyPlayInstance(this.wasmGamePtr);
+						this.wasmGamePtr = 0;
 					}
 					catch {
 						// ignore

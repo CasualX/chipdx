@@ -306,7 +306,6 @@ impl Instance {
 				}
 				chipgame::play::PlayEvent::SetTitle => set_title(&self.play),
 				chipgame::play::PlayEvent::Restart => self.play.launch(graphics),
-				chipgame::play::PlayEvent::LoadExternalLevelSet => {}
 				chipgame::play::PlayEvent::Quit => {
 					with_host(|host| host.quit_game());
 				}

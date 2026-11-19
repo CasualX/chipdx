@@ -29,7 +29,7 @@ pub fn convert(dat: &super::Data, title: String) -> chipty::LevelSetDto {
 		}
 
 		let mut level = LevelDto {
-			name: lvdat.metadata.title.clone().unwrap(),
+			name: lvdat.metadata.title.clone().unwrap_or_else(|| format!("Level {}", lvdat.number)),
 			author: lvdat.metadata.author.clone(),
 			hint: lvdat.metadata.hint.clone(),
 			password: lvdat.metadata.password.clone(),
@@ -190,8 +190,7 @@ fn process_tile(terrain: &mut Vec<Terrain>, entities: &mut Vec<EntityArgs>, pos:
 		0x6e => entities.push(ent_args(EntityKind::Player, pos, None)),
 		0x6f => entities.push(ent_args(EntityKind::Player, pos, None)),
 
-		0x70 => terrain[index] = Terrain::Blank, // Values of $70 and above are used internally for graphical transparency.
-		value => unimplemented!("Tile: ${:02x}", value),
+		0x70..=0xff => terrain[index] = Terrain::Blank, // Values of $70 and above are used internally for graphical transparency.
 	}
 }
 
@@ -257,6 +256,9 @@ fn replace_block_cloners(level: &mut LevelDto) -> bool {
 		let Some(&conn) = level.connections.iter().find(|&conn| conn.dest == ent_args.pos) else {
 			continue
 		};
+		if !(0..level.map.width).contains(&conn.src.x) || !(0..level.map.height).contains(&conn.src.y) {
+			continue;
+		}
 
 		{
 			let index = (conn.src.y * level.map.width + conn.src.x) as usize;

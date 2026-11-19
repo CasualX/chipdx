@@ -6,7 +6,6 @@ const LEVELSETS_PER_PAGE: usize = 14;
 pub struct LevelSetMenu {
 	pub selected: usize,
 	pub items: Vec<String>,
-	pub external_loader_label: Option<String>,
 	pub splash: Vec<Option<shade::AnimatedTexture2D>>,
 	pub ntime: i32,
 	offset: usize,
@@ -14,24 +13,20 @@ pub struct LevelSetMenu {
 }
 
 impl LevelSetMenu {
-	pub fn new(selected: usize, items: Vec<String>, external_loader_label: Option<String>, splash: Vec<Option<shade::AnimatedTexture2D>>) -> Self {
-		let mut menu = Self { selected, items, external_loader_label, splash, ..Default::default() };
-		menu.selected = menu.selected.min(menu.item_count().saturating_sub(1));
+	pub fn new(selected: usize, items: Vec<String>, splash: Vec<Option<shade::AnimatedTexture2D>>) -> Self {
+		let mut menu = Self { selected, items, splash, ..Default::default() };
+		menu.selected = menu.selected.min(menu.items.len().saturating_sub(1));
 		menu.offset = menu.selected.saturating_sub(LEVELSETS_PER_PAGE / 2 - 1).min(menu.max_offset());
 		menu.offsetf = menu.offset as f32;
 		menu
 	}
 
-	fn item_count(&self) -> usize {
-		self.items.len() + usize::from(self.external_loader_label.is_some())
-	}
-
 	fn max_offset(&self) -> usize {
-		self.item_count().saturating_sub(LEVELSETS_PER_PAGE)
+		self.items.len().saturating_sub(LEVELSETS_PER_PAGE)
 	}
 
 	fn jump(&mut self, jump: isize, events: &mut Vec<MenuEvent>) {
-		let selected = self.selected.saturating_add_signed(jump).min(self.item_count().saturating_sub(1));
+		let selected = self.selected.saturating_add_signed(jump).min(self.items.len().saturating_sub(1));
 		if selected != self.selected {
 			self.selected = selected;
 			events.push(MenuEvent::CursorMove);
@@ -57,13 +52,8 @@ impl LevelSetMenu {
 		if input.right.is_pressed() {
 			self.jump(10, events);
 		}
-		if (input.a.is_pressed() || input.start.is_pressed()) && self.item_count() > 0 {
-			if self.selected < self.items.len() {
-				events.push(MenuEvent::LoadLevelSet { index: self.selected });
-			}
-			else {
-				events.push(MenuEvent::LoadExternalLevelSet);
-			}
+		if (input.a.is_pressed() || input.start.is_pressed()) && self.selected < self.items.len() {
+			events.push(MenuEvent::LoadLevelSet { index: self.selected });
 			events.push(MenuEvent::CursorSelect);
 		}
 		if input.b.is_pressed() {
@@ -125,11 +115,6 @@ impl LevelSetMenu {
 			buf.text_box(&resx.font, &scribe, &top, shade::d2::TextAlign::MiddleCenter, "Choose LevelSet");
 		}
 
-		let mut items = self.items.iter().map(|s| s as &dyn fmt::Display).collect::<Vec<_>>();
-		if let Some(label) = &self.external_loader_label {
-			items.push(label as &dyn fmt::Display);
-		}
-
 		let size = resx.font_size();
 		let mut scribe = shade::d2::Scribe {
 			font_size: size * 0.75,
@@ -144,10 +129,10 @@ impl LevelSetMenu {
 		let top_transparent = top_opaque - scribe.line_height * 1.5;
 		let bottom_transparent = bottom_opaque + scribe.line_height * 1.5;
 		// Keep short collections centered within the list area.
-		let padding = LEVELSETS_PER_PAGE.saturating_sub(items.len()) as f32 * scribe.line_height * 0.5;
+		let padding = LEVELSETS_PER_PAGE.saturating_sub(self.items.len()) as f32 * scribe.line_height * 0.5;
 		let mut y = top_opaque + padding - self.offsetf * scribe.line_height;
 
-		for (i, item) in items.iter().enumerate() {
+		for (i, item) in self.items.iter().enumerate() {
 			if y > bottom_transparent {
 				break;
 			}
@@ -161,7 +146,7 @@ impl LevelSetMenu {
 				scribe.outline.w = alpha;
 
 				let row = Bounds2::point(Vec2(rect.center().x, y), Vec2::ZERO);
-				buf.text_lines(&resx.font, &scribe, &row, shade::d2::TextAlign::MiddleCenter, std::slice::from_ref(item));
+				buf.text_lines(&resx.font, &scribe, &row, shade::d2::TextAlign::MiddleCenter, &[item]);
 			}
 			y += scribe.line_height;
 		}

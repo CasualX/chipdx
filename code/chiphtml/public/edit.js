@@ -635,7 +635,6 @@ window.chipEditor = function chipEditor() {
 					registerSound: () => {},
 					registerMusic: () => {},
 					setTitle: () => {},
-					requestLevelSetFile: () => {},
 					resultError,
 					readFile,
 					writeFile,

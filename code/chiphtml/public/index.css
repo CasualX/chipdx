@@ -126,35 +126,169 @@ body::before {
 	line-height: 1;
 }
 
-#levelset-file-input {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	opacity: 0;
+#levelset-manager {
+	width: min(480px, calc(100% - 24px));
+	inset-block-end: calc(40px + env(safe-area-inset-bottom, 0px));
+	max-height: calc(100% - 64px - env(safe-area-inset-bottom, 0px));
+	padding: 16px;
+	border: 1px solid rgba(148, 163, 184, 0.24);
+	border-radius: 4px;
+	background: #0b1224;
+	color: var(--text);
+	box-shadow: 0 24px 64px rgba(2, 6, 23, 0.6);
+}
+
+#levelset-manager::backdrop {
+	background: rgba(2, 6, 23, 0.68);
+}
+
+#levelset-manager[open] {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+#levelset-manager h2 {
+	margin: 0;
+	font-size: 20px;
+}
+
+.levelset-content {
+	display: grid;
+	gap: 8px;
+	overflow-y: auto;
+}
+
+#levelset-manager p {
+	margin: 0;
+	color: var(--muted);
+	font-size: 14px;
+}
+
+#levelset-manager ul {
+	margin: 0;
+	padding: 0;
+	border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+	list-style: none;
+}
+
+#levelset-manager li {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+	justify-content: space-between;
+	padding: 2px 0;
+	border-top: 1px solid rgba(148, 163, 184, 0.18);
+	font-size: 14px;
+	overflow-wrap: anywhere;
+}
+
+.levelset-remove {
+	display: grid;
+	place-items: center;
+	flex: 0 0 28px;
+	height: 28px;
+	padding: 0;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--muted);
+	cursor: pointer;
+}
+
+.levelset-remove:is(:hover, :focus-visible) {
+	background: rgba(148, 163, 184, 0.12);
+	color: var(--text);
+}
+
+.levelset-remove svg {
+	width: 16px;
+	height: 16px;
+}
+
+.levelset-actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.toast {
+	position: fixed;
+	z-index: 7;
+	inset-inline: 12px;
+	bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+	display: flex;
+	justify-content: center;
+	text-align: center;
 	pointer-events: none;
 }
 
-#levelset-file-prompt {
-	position: absolute;
-	inset: 0;
-	display: grid;
-	place-items: center;
-	padding: 20px;
-	background: rgba(2, 6, 23, 0.68);
-	z-index: 6;
+.toast span {
+	max-width: min(460px, 100%);
+	max-height: min(36vh, 160px);
+	overflow: auto;
+	padding: 8px 14px;
+	border: 1px solid rgba(148, 163, 184, 0.28);
+	border-radius: 4px;
+	background: #17233a;
+	box-shadow: 0 4px 12px rgba(2, 6, 23, 0.45);
+	font-size: 13px;
+	white-space: pre-line;
+	overflow-wrap: anywhere;
+	pointer-events: auto;
 }
 
-#levelset-file-prompt button {
-	appearance: none;
-	padding: 13px 18px;
-	border-radius: 4px;
-	border-color: rgba(249, 115, 22, 0.7);
-	background: linear-gradient(135deg, #f59e0b, #ea580c);
-	color: #fff7ed;
+.toast .error {
+	border-color: rgba(248, 113, 113, 0.45);
+	background: #2a1a25;
+}
+
+#levelset-manager[open] + .toast {
+	display: none;
+}
+
+#storage-option,
+#storage-option label {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+#storage-option {
+	flex-wrap: wrap;
+	padding-top: 10px;
+	border-top: 1px solid rgba(148, 163, 184, 0.18);
+	color: var(--muted);
+	font-size: 13px;
+}
+
+#storage-option label {
+	min-height: 22px;
+}
+
+#persistent-storage {
+	margin: 0;
+	accent-color: #fb923c;
+}
+
+.storage-help-button {
+	display: grid;
+	place-items: center;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	border: 1px solid rgba(148, 163, 184, 0.3);
+	border-radius: 50%;
+	background: transparent;
+	color: var(--muted);
 	font: inherit;
-	font-size: 16px;
-	font-weight: 800;
+	font-weight: 700;
 	cursor: pointer;
+}
+
+.storage-help-button:hover {
+	color: var(--text);
 }
 
 #loading-screen {
@@ -380,13 +514,23 @@ body::before {
 	min-width: 76px;
 }
 
-#session-options {
+#session-footer {
 	display: flex;
 	align-items: center;
 	gap: 10px;
 	flex-wrap: wrap;
 	padding-top: 4px;
 	user-select: none;
+}
+
+#session-options,
+#session-actions {
+	display: flex;
+	gap: 10px;
+}
+
+#session-actions {
+	margin-left: auto;
 }
 
 @media (orientation: landscape) {
@@ -398,13 +542,10 @@ body::before {
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 		align-items: stretch;
 	}
-
-	#session-options {
-		justify-content: space-between;
-	}
 }
 
-.option-toggle {
+.option-toggle,
+.secondary-button {
 	position: relative;
 	display: inline-flex;
 	align-items: center;
@@ -417,6 +558,16 @@ body::before {
 	font-weight: 600;
 	color: var(--text);
 	cursor: pointer;
+}
+
+.secondary-button {
+	font-family: inherit;
+}
+
+.secondary-button:disabled,
+.levelset-remove:disabled {
+	opacity: 0.45;
+	cursor: wait;
 }
 
 .option-toggle input {
@@ -446,7 +597,6 @@ body::before {
 
 #play-button {
 	appearance: none;
-	margin-left: auto;
 	padding: 13px 24px;
 	border: 0;
 	border-radius: 4px;

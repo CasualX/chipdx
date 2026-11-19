@@ -52,7 +52,6 @@ impl PlayState {
 		self.menu.stack.push(menu::Menu::LevelSet(menu::LevelSetMenu::new(
 			i32::max(0, self.lvsets.selected) as usize,
 			self.lvsets.collection.iter().map(|level_set| level_set.title.clone()).collect(),
-			self.lvsets.external_loader_label.clone(),
 			splash,
 		)));
 	}
@@ -197,9 +196,6 @@ impl PlayState {
 					self.save_data.save(&self.lvsets.current());
 					self.menu.open_main(self.save_data.current_level > 0, &self.lvsets.current().title);
 					self.play_music();
-				}
-				menu::MenuEvent::LoadExternalLevelSet => {
-					self.events.push(PlayEvent::LoadExternalLevelSet);
 				}
 				menu::MenuEvent::NewGame => {
 					self.play_level(1);

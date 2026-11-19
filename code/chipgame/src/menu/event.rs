@@ -6,7 +6,6 @@ pub enum MenuEvent {
 	CloseMenu,
 
 	LoadLevelSet { index: usize },
-	LoadExternalLevelSet,
 	SwitchLevelSet,
 	OpenMainMenu,
 
