@@ -6,14 +6,22 @@ This document describes packaging, release artifacts and validation.
 ## GitHub Actions
 
 Run **Build Binaries** (`workflow_dispatch`) on the branch containing the changes.
+For a release build, enter the intended GitHub tag in `release_tag`. A build
+run from a tag uses that tag when the input is blank.
 The `chipdx-appimage-x86_64` artifact contains `ChipDX-x86_64.AppImage` and
 `ChipDX-x86_64.AppImage.sha256`. Wait for the Linux startup checks to pass before
 replacing both files on the GitHub release.
 
-The image includes `chipplay`, `chipedit`, shared assets and five curated
-community levelsets. `AppRun` launches the game by default and the editor when
-passed `--editor`. It resolves relative editor level paths before changing to
-the writable user-data directory.
+The image includes `chipplay` and `chipedit` in `usr/bin`, shared assets and five
+curated community levelsets. The AppImage runtime launches the root `AppRun`
+script. `AppRun` consumes a leading `play` or `edit` subcommand, defaults to
+`chipplay`, and passes the remaining arguments to the selected executable.
+It sets `CHIPDX_LAUNCH_DIR` before entering the writable user-data directory so
+the editor can resolve its level path against the caller's directory.
+
+The AppStream metadata embeds the official project URL. Release builds also
+embed the tag, a link to its release page, and the UTC build date. Untagged
+builds with an empty `release_tag` carry the project information only.
 
 ## Compatibility policy
 
@@ -23,11 +31,11 @@ baseline is **glibc 2.31**, x86_64 with baseline x86-64 CPU instructions.
 It also rejects libraries reserved for the host desktop, including the names
 recorded in `usr/share/chipdx/host-libraries.txt`.
 
-The host provides glibc, OpenGL/EGL, graphics drivers, Wayland, xkbcommon,
-keyboard/Compose data and the editor's GTK 3/libnotify stack. On Debian/Ubuntu,
-the desktop runtime packages include `libegl1`, the appropriate graphics driver,
-`libwayland-client0`, `libwayland-cursor0`, `libwayland-egl1`, `libxkbcommon0`,
-`libxkbcommon-x11-0`, `xkb-data`, `libgtk-3-0` (or `libgtk-3-0t64`) and `libnotify4`.
+The host provides glibc, OpenGL/EGL, graphics drivers, Wayland, keyboard/Compose
+data and the editor's GTK 3/libnotify stack. On Debian/Ubuntu, the desktop runtime
+packages include `libegl1`, the appropriate graphics driver, `libwayland-client0`,
+`libwayland-cursor0`, `libwayland-egl1`, `libxkbcommon0`, `xkb-data`,
+`libgtk-3-0` (or `libgtk-3-0t64`) and `libnotify4`.
 These compatibility targets are independent of distribution security lifecycles.
 
 linuxdeploy bundles the remaining dependencies, including audio libraries.
@@ -37,14 +45,22 @@ comes from the host; its library names are recorded in the image's
 ALSA/PulseAudio connect to the host audio system. Wayland libraries
 must stay with the host graphics drivers: bundling Ubuntu 20.04's client library
 breaks newer Mesa EGL drivers that require `wl_proxy_marshal_flags` (issue #4).
-Using the host xkbcommon also avoids parsing newer Compose tables with an old
-keysym database.
+The game and editor prefer the host xkbcommon. When winit will use X11 and
+the host adapter cannot load, `AppRun` adds the private directory containing
+`libxkbcommon.so.0`, `libxkbcommon-x11.so.0` and `libxcb-xkb.so.1` to the loader
+path. The first two are built together from the pinned upstream source, and
+the third comes from the baseline container. The matching core and adapter
+avoid crashes from mixing keyboard libraries across versions. Update the
+upstream source pin and checksum in `build-x11-fallback.sh` when refreshing
+xkbcommon. The bundle includes the notices for both sources.
 
 CI uses software OpenGL and null audio, with Xvfb for X11 and headless Weston
-for Wayland. Both the game and editor are checked. The Wayland check unsets
-DISPLAY and verifies that each application submits
-native Wayland buffers, accepting both `interface@id` and `interface#id` debug
-formats. Debian 11 jobs use Debian's signed archive repositories because the
+for Wayland. Both the game and editor are checked on Ubuntu, Debian and Fedora.
+The X11 jobs use a desktop runtime without the host X11 adapter and verify that
+each bundled library loads. A second Ubuntu 22.04 run verifies startup with the
+host adapter installed. The Wayland check unsets `DISPLAY`, verifies that each
+program submits native Wayland buffers, and checks that the fallback stays out
+of the process. Debian 11 jobs use Debian's signed archive repositories because the
 live Bullseye security indexes reference packages removed after its LTS ended.
 Expiry checks are disabled only for the archived security repository; package
 signature verification remains enabled.
@@ -76,6 +92,9 @@ to avoid reusing binaries compiled on a newer host. Before rebuilding, remove
 different glibc baseline; packaging a binary built on a recent host would defeat
 the compatibility target.
 
+For a local release build, set `CHIPDX_RELEASE_TAG` when running the build
+script, for example `CHIPDX_RELEASE_TAG=v2026-11 bash packaging/appimage/build.sh`.
+
 ## Startup checks
 
 With Xvfb, xauth, Weston and the desktop runtime packages installed:
@@ -87,4 +106,6 @@ bash packaging/appimage/smoke-test.sh target/appimage/dist/ChipDX-x86_64.AppImag
 bash packaging/appimage/smoke-test.sh target/appimage/dist/ChipDX-x86_64.AppImage wayland editor
 ```
 
-Each check runs for 20 seconds in a temporary user directory, without FUSE.
+Use `x11` with the host adapter installed or `x11-fallback` on a test system
+without it. Each check runs for 20 seconds in a temporary user directory without
+FUSE.

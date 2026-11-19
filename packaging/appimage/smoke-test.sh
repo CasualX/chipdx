@@ -6,11 +6,11 @@ program=${3:-game}
 launch_args=()
 case "$program" in
     game) ;;
-    editor) launch_args=(--editor) ;;
+    editor) launch_args=(edit) ;;
     *) echo "Unknown program: $program" >&2; exit 1 ;;
 esac
 case "$backend" in
-    x11|wayland) ;;
+    x11|x11-fallback|wayland) ;;
     *) echo "Unknown display backend: $backend" >&2; exit 1 ;;
 esac
 scratch=$(mktemp -d)
@@ -39,10 +39,15 @@ export APPIMAGE_EXTRACT_AND_RUN=1
 export LD_BIND_NOW=1
 cd "$scratch"
 chmod +x "$image"
+run_image=(env LD_DEBUG=libs LD_DEBUG_OUTPUT="$scratch/loader" "$image" "${launch_args[@]}")
 status=0
 if [[ "$backend" == wayland ]]; then
     export WAYLAND_DISPLAY=wayland-chipdx-test
-    weston --backend=headless-backend.so --use-pixman --no-config \
+    weston_args=(--backend=headless-backend.so --use-pixman)
+    if [[ $(weston --help 2>&1) == *--renderer* ]]; then
+        weston_args=(--backend=headless --renderer=pixman)
+    fi
+    weston "${weston_args[@]}" --no-config \
         --socket="$WAYLAND_DISPLAY" --idle-time=0 > weston.log 2>&1 &
     compositor=$!
     for ((attempt=0; attempt<100; attempt++)); do
@@ -55,15 +60,32 @@ if [[ "$backend" == wayland ]]; then
         echo 'Headless Wayland compositor failed to start.' >&2
         exit 1
     fi
-    WAYLAND_DEBUG=1 timeout 20s "$image" "${launch_args[@]}" > game.log 2>&1 || status=$?
+    WAYLAND_DEBUG=1 timeout 20s "${run_image[@]}" > game.log 2>&1 || status=$?
 else
-    timeout 20s xvfb-run -a -s '-screen 0 1024x768x24' "$image" "${launch_args[@]}" > game.log 2>&1 || status=$?
+    timeout 20s xvfb-run -a -s '-screen 0 1024x768x24' "${run_image[@]}" > game.log 2>&1 || status=$?
 fi
 log_status=0
 grep -Eiq 'panicked at|symbol lookup error|unrecognized keysym|Error (reading|loading|parsing)' game.log || log_status=$?
 if [[ $status != 124 || $log_status != 1 ]]; then
     tail -80 game.log >&2
     echo "Game failed the startup smoke test (exit $status)." >&2
+    exit 1
+fi
+loader_logs=(loader.*)
+if [[ ! -f ${loader_logs[0]} ]]; then
+    echo 'Missing dynamic loader logs.' >&2
+    exit 1
+fi
+fallback_init='calling init: .*/usr/lib/chipdx-x11/'
+if [[ "$backend" == x11-fallback ]]; then
+    for library in libxkbcommon.so.0 libxkbcommon-x11.so.0 libxcb-xkb.so.1; do
+        if ! grep -Eq "$fallback_init${library//./\\.}$" "${loader_logs[@]}"; then
+            echo "X11 fallback did not load $library." >&2
+            exit 1
+        fi
+    done
+elif grep -q "$fallback_init" "${loader_logs[@]}"; then
+    echo "Unexpected use of the packaged X11 fallback on $backend." >&2
     exit 1
 fi
 if [[ "$backend" == wayland ]]; then

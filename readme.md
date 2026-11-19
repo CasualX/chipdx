@@ -51,7 +51,7 @@ Precompiled binaries for x86_64 Linux are available as an AppImage on the [Relea
 2. Make it executable: `chmod +x ChipDX-x86_64.AppImage`.
 3. Run `./ChipDX-x86_64.AppImage` and select a levelset to begin playing.
 
-The AppImage includes the game, level editor, and bundled levelsets. Run `./ChipDX-x86_64.AppImage --editor` to create or edit levels.
+The AppImage includes the game, level editor, and bundled levelsets. Run `./ChipDX-x86_64.AppImage edit` to create or edit levels.
 See [AppImage compatibility and usage notes](packaging/appimage/readme.md) for system requirements, save locations, and additional levelsets.
 
 ### Build from Source

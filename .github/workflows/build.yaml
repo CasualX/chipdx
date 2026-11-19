@@ -2,6 +2,11 @@ name: Build Binaries
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: AppImage release tag
+        type: string
+        required: false
 
 jobs:
   win32:
@@ -40,6 +45,8 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
 
     - name: Build AppImage (glibc 2.31 baseline)
+      env:
+        CHIPDX_RELEASE_TAG: ${{ inputs.release_tag }}
       run: bash packaging/appimage/build.sh
 
     - name: Upload AppImage
@@ -55,10 +62,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ['ubuntu:20.04', 'ubuntu:22.04', 'ubuntu:24.04', 'debian:11', 'debian:12', 'debian:13']
-        backend: [x11, wayland]
+        os:
+        - ubuntu:20.04
+        - ubuntu:22.04
+        - ubuntu:24.04
+        - ubuntu:26.04
+        - debian:11
+        - debian:12
+        - debian:13
+        - fedora:44
+        - fedora:45
+        backend: [x11-fallback, wayland]
     container: ${{ matrix.os }}
     steps:
+    - name: Install Fedora Desktop Runtime for Smoke Test
+      if: startsWith(matrix.os, 'fedora:')
+      run: |
+        dnf install -y --setopt=install_weak_deps=False git tar xorg-x11-server-Xvfb \
+          weston mesa-dri-drivers mesa-libEGL mesa-libGL libwayland-client libwayland-cursor \
+          libwayland-egl libxkbcommon xkeyboard-config gtk3 libnotify
+
     - name: Checkout Sources
       uses: actions/checkout@v7
 
@@ -79,13 +102,14 @@ jobs:
         deb [check-valid-until=no] http://archive.debian.org/debian-security bullseye-security main
         EOF
 
-    - name: Install Desktop Runtime for Smoke Test
+    - name: Install Debian and Ubuntu Desktop Runtime for Smoke Test
+      if: ${{ !startsWith(matrix.os, 'fedora:') }}
       run: |
         apt-get update
         DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
           xvfb xauth weston libgl1-mesa-dri libglx-mesa0 libegl1 \
           libwayland-client0 libwayland-cursor0 libwayland-egl1 \
-          libxkbcommon0 libxkbcommon-x11-0 xkb-data libgtk-3-0 libnotify4
+          libxkbcommon0 xkb-data libgtk-3-0 libnotify4
 
     - name: Verify Checksum and Launch Game Without FUSE
       run: |
@@ -94,3 +118,10 @@ jobs:
         cd ..
         bash packaging/appimage/smoke-test.sh appimage/ChipDX-x86_64.AppImage '${{ matrix.backend }}'
         bash packaging/appimage/smoke-test.sh appimage/ChipDX-x86_64.AppImage '${{ matrix.backend }}' editor
+
+    - name: Verify X11 With Host Keyboard Libraries
+      if: matrix.os == 'ubuntu:22.04' && matrix.backend == 'x11-fallback'
+      run: |
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libxkbcommon-x11-0
+        bash packaging/appimage/smoke-test.sh appimage/ChipDX-x86_64.AppImage x11
+        bash packaging/appimage/smoke-test.sh appimage/ChipDX-x86_64.AppImage x11 editor

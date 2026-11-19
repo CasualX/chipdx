@@ -53,8 +53,33 @@ install -m755 "$CARGO_TARGET_DIR/release/chipedit" "$appdir/usr/bin/chipedit"
 install -m755 packaging/appimage/AppRun "$appdir/AppRun"
 cp code/android/icon.svg "$appdir/chipdx.svg"
 
+app_id=net.casualhacks.chipdx
+metainfo="$appdir/usr/share/metainfo/$app_id.appdata.xml"
+install -Dm644 "packaging/appimage/$app_id.appdata.xml" "$metainfo"
+release_tag=${CHIPDX_RELEASE_TAG:-}
+if [[ -z "$release_tag" && ${GITHUB_REF_TYPE:-} == tag ]]; then
+    release_tag=${GITHUB_REF_NAME:-}
+fi
+if [[ -n "$release_tag" ]]; then
+    python3 - "$metainfo" "$release_tag" "$(date -u +%F)" <<'PY'
+import sys
+import xml.etree.ElementTree as ET
+from urllib.parse import quote
+
+path, tag, date = sys.argv[1:]
+tree = ET.parse(path)
+component = tree.getroot()
+homepage = component.findtext("url[@type='homepage']")
+releases = ET.SubElement(component, "releases")
+release = ET.SubElement(releases, "release", version=tag, date=date)
+ET.SubElement(release, "url", type="details").text = f"{homepage}/releases/tag/{quote(tag, safe='')}"
+tree.write(path, encoding="utf-8", xml_declaration=True)
+PY
+    export VERSION="$release_tag"
+fi
+
 # winit and miniaudio dlopen these: ldd alone does not discover them.
-# Leave glibc, graphics drivers, Wayland and keyboard libraries on the host.
+# Leave glibc, graphics drivers, Wayland and the default keyboard stack on the host.
 # New host EGL drivers can require Wayland symbols absent from Ubuntu 20.04;
 # old xkbcommon also cannot parse newer host Compose tables (issue #4).
 libraries=(
@@ -67,7 +92,7 @@ libraries=(
 # The editor uses the host GTK/GLib stack for native file dialogs. Bundling an
 # older GLib would also break newer host GTK modules and desktop integration.
 host_patterns=(
-    'libwayland-*.so*' 'libxkbcommon*.so*'
+    'libwayland-*.so*' 'libxkbcommon*.so*' 'libxcb-xkb.so*'
     'libgtk-3.so*' 'libgdk-3.so*'
     'libglib-2.0.so*' 'libgobject-2.0.so*'
     'libgio-2.0.so*' 'libgmodule-2.0.so*'
@@ -102,11 +127,13 @@ done
 
 export APPIMAGE_EXTRACT_AND_RUN=1
 "$tool" --appdir "$appdir" "${host_libraries[@]}" "${extra[@]}" \
-    --desktop-file packaging/appimage/chipdx.desktop --icon-file "$appdir/chipdx.svg"
+    --desktop-file "packaging/appimage/$app_id.desktop" --icon-file "$appdir/chipdx.svg"
+bash packaging/appimage/build-x11-fallback.sh "$work" "$appdir"
 python3 packaging/appimage/check-abi.py "$appdir"
 
 export ARCH=x86_64
 export OUTPUT="$work/dist/ChipDX-x86_64.AppImage"
+export AS_VALIDATE_NONET=1
 "$tool" --appdir "$appdir" "${host_libraries[@]}" --output appimage
 python3 packaging/appimage/check-abi.py "$OUTPUT"
 cd "$work/dist"

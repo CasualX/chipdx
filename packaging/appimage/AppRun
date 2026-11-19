@@ -2,15 +2,10 @@
 set -eu
 
 program=chipplay
-if [ "${1:-}" = --editor ]; then
-    program=chipedit
-    shift
-    # Preserve level paths relative to the caller before entering userdata.
-    case "${1:-}" in
-        ''|-*|/*) ;;
-        *) level="$PWD/$1"; shift; set -- "$level" "$@" ;;
-    esac
-fi
+case "${1:-}" in
+    play) shift ;;
+    edit) program=chipedit; shift ;;
+esac
 
 appdir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 assets="$appdir/usr/share/chipdx"
@@ -27,5 +22,12 @@ if [ ! -e "$userdata/chipdx.ini" ]; then
     cp -n "$assets/chipdx.ini" "$userdata/chipdx.ini"
 fi
 export LD_LIBRARY_PATH="$appdir/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export CHIPDX_LAUNCH_DIR="$PWD"
 cd "$userdata"
+# Match winit's backend selection. Keep the host's keyboard libraries on
+# native Wayland and on X11 desktops with a loadable XKB adapter.
+if [ -n "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}${WAYLAND_SOCKET:-}" ] &&
+    ! "$appdir/usr/libexec/chipdx/probe-xkbcommon-x11"; then
+    export LD_LIBRARY_PATH="$appdir/usr/lib/chipdx-x11:$LD_LIBRARY_PATH"
+fi
 exec "$appdir/usr/bin/$program" "$@"

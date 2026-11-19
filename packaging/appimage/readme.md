@@ -25,8 +25,8 @@ sha256sum -c ChipDX-x86_64.AppImage.sha256
 Launch the editor from a terminal, optionally supplying a level JSON file:
 
 ```sh
-./ChipDX-x86_64.AppImage --editor
-./ChipDX-x86_64.AppImage --editor path/to/level.json
+./ChipDX-x86_64.AppImage edit
+./ChipDX-x86_64.AppImage edit path/to/level.json
 ```
 
 Relative level paths are resolved from the directory where you launch the image.
@@ -34,19 +34,30 @@ Use **F2** to open a level and **F5** to save it in a location of your choice.
 The editor shares the game's configuration. See the
 [level editor controls](../../readme.md#level-editor) for more shortcuts.
 
+## Command-line arguments
+
+Put AppImage runtime options, such as `--appimage-extract-and-run`, before the
+subcommand. Reserve `--appimage-*` for the runtime because it inspects arguments
+before ChipDX sees them. `--appimage-help` shows the runtime options.
+
+Arguments after `play` or `edit` go to the selected executable. For example,
+`./ChipDX-x86_64.AppImage edit --help` shows the editor's options. Use `edit --`
+before a level path that starts with a hyphen.
+
 ## System requirements
 
 - An x86_64 Linux desktop with glibc 2.31 or later.
 - Working graphics drivers supporting OpenGL 3.3, with X11 or Wayland.
+- The host's Wayland client and xkbcommon libraries for native Wayland. On X11,
+  the AppImage includes a fallback if the host keyboard adapter is missing.
 - GTK 3 and libnotify for the editor's file dialogs. These are usually available
   on desktop installations; on Debian/Ubuntu, install `libgtk-3-0` (or
   `libgtk-3-0t64` on newer releases) and `libnotify4` if they are missing.
 
 | Distribution / environment | Compatibility |
 | --- | --- |
-| Ubuntu 20.04, 22.04, 24.04; Debian 11, 12, 13 | Targeted desktop releases, with X11 and Wayland support |
-| Newer Ubuntu/Debian and Ubuntu-based Linux Mint | Expected to work with the requirements above |
-| Fedora, Arch, openSUSE and other glibc desktops | Expected to work with the requirements above; not every distribution is tested |
+| Ubuntu 20.04, 22.04, 24.04, 26.04; Debian 11, 12, 13; Fedora 44, 45 | X11 and Wayland startup covered by the CI matrix |
+| Ubuntu-based Linux Mint, Arch, openSUSE and other glibc desktops | Expected to work with the requirements above |
 | NixOS | Use a suitable environment such as `appimage-run` |
 | Alpine / musl, glibc older than 2.31, ARM or 32-bit x86 | Not supported by this AppImage |
 
@@ -73,7 +84,7 @@ If you cannot launch the image because FUSE is unavailable, use:
 
 ```sh
 ./ChipDX-x86_64.AppImage --appimage-extract-and-run
-./ChipDX-x86_64.AppImage --appimage-extract-and-run --editor
+./ChipDX-x86_64.AppImage --appimage-extract-and-run edit path/to/level.json
 ```
 
 If native Wayland startup fails, you can try Xwayland if it is installed and

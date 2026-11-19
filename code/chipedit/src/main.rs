@@ -202,7 +202,12 @@ fn main() {
 		.arg(clap::arg!([level] "Level file to open").value_parser(clap::value_parser!(path::PathBuf)))
 		.get_matches();
 
-	let mut file_path = matches.get_one::<path::PathBuf>("level").cloned();
+	let mut file_path = matches.get_one::<path::PathBuf>("level").map(|level| {
+		match std::env::var_os("CHIPDX_LAUNCH_DIR") {
+			Some(dir) => path::PathBuf::from(dir).join(level),
+			None => level.clone(),
+		}
+	});
 
 	let mut config = {
 		let config = fs::read_to_string("chipdx.ini").unwrap_or_default();
